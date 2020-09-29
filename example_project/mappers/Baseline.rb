@@ -549,8 +549,7 @@ module URBANopt
               args[:schedules_type] = feature.schedules_type
               if feature.schedules_type == 'stochastic'
                 begin
-                  args[:building_id] = feature_id
-                  args[:random_seed] = feature.random_seed
+                  args[:schedules_random_seed] = feature.random_seed
                 rescue NoMethodError
                 end
               end
