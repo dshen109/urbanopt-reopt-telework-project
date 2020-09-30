@@ -2,6 +2,7 @@
 *.conf
 /example_project/run/*
 /example_project/.bundle
+/example_project/weather/*.csv
 *.DS_Store
 *.gem
 *.rbc
