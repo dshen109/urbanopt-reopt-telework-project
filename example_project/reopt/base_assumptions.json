@@ -11,7 +11,7 @@
         "microgrid_upgrade_cost_pct": 0.3
       },
       "LoadProfile": {
-        "year": 2018,
+        "year": 2007,
         "loads_kw_is_net": true,
         "critical_loads_kw_is_net": false,
         "critical_load_pct": 0.5,
@@ -19,9 +19,9 @@
       },
       "ElectricTariff": {
         "add_blended_rates_to_urdb_rate": false,
-        "net_metering_limit_kw": 0,
+        "net_metering_limit_kw": 100,
         "interconnection_limit_kw": 100000000.0,
-       "urdb_label": "5e162e2a5457a3d50873e3af"
+        "urdb_label": "5cafabf85457a35c5f7780e4"
       },
       "Wind": {
         "min_kw": 0,
@@ -52,7 +52,7 @@
         "existing_kw": 0,
         "min_kw": 0,
         "max_kw": 1000000000.0,
-        "installed_cost_us_dollars_per_kw": 1600,
+        "installed_cost_us_dollars_per_kw": 2960,
         "om_cost_us_dollars_per_kw": 16,
         "macrs_option_years": 5,
         "macrs_bonus_pct": 1,
@@ -80,7 +80,7 @@
         "dc_ac_ratio": 1.2,
         "inv_eff": 0.96,
         "radius": 0,
-        "tilt": 0.537
+        "tilt": 18.43
       },
       "Storage": {
         "min_kw": 0,
@@ -93,10 +93,10 @@
         "soc_min_pct": 0.2,
         "soc_init_pct": 0.5,
         "canGridCharge": true,
-        "installed_cost_us_dollars_per_kw": 840,
-        "installed_cost_us_dollars_per_kwh": 420,
-        "replace_cost_us_dollars_per_kw": 410,
-        "replace_cost_us_dollars_per_kwh": 200,
+        "installed_cost_us_dollars_per_kw": 2750,
+        "installed_cost_us_dollars_per_kwh": 1050,
+        "replace_cost_us_dollars_per_kw": 1650,
+        "replace_cost_us_dollars_per_kwh": 630,
         "inverter_replacement_year": 10,
         "battery_replacement_year": 10,
         "macrs_option_years": 7,
@@ -108,7 +108,7 @@
       "Generator": {
         "existing_kw": 0,
         "min_kw": 0,
-        "max_kw": 1000000000.0,
+        "max_kw": 0,
         "installed_cost_us_dollars_per_kw": 500,
         "om_cost_us_dollars_per_kw": 10,
         "om_cost_us_dollars_per_kwh": 0.0,
