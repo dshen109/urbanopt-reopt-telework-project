@@ -551,6 +551,9 @@ module URBANopt
                 begin
                   args[:schedules_random_seed] = feature.random_seed
                 rescue NoMethodError
+                  puts "random_seed not set for stochastic schedules, " \
+                    "defaulting to using the feature ID of #{feature_id}"
+                  args[:schedules_random_seed] = feature_id
                 end
               end
             rescue NoMethodError
