@@ -3,7 +3,8 @@
 /example_project/run/*
 /example_project/.bundle
 /example_project/weather/*.csv
-*.DS_Store
+/example_project/.ipynb_checkpoints*
+.DS_Store
 *.gem
 *.rbc
 /.config
