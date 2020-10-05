@@ -66,7 +66,6 @@ module URBANopt
       def files_dir
         return File.absolute_path(File.join(@root_dir, 'weather'))
       end
-
     end
   end
 end
