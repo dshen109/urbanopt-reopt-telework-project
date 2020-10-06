@@ -1,6 +1,8 @@
 # Generate scenario JSON and CSV files to automate runs.
+import copy
 import csv
 import json
+import subprocess
 
 DEFAULT_BUILDING = {
     "type": "Building",
@@ -44,17 +46,10 @@ class Simulation:
         - default_template
         - weatherfile
         - timesteps_per_hour
-        - urdb_tariff
-        - net_metering_limit_kw
-        - pv_cost_per_kw
-        - storage_cost_per_kw
-        - storage cost_per_kwh
-        - storage_replacement_cost_per_kw
-        - storage_replacement_cost_per_kwh
     """
 
     def __init__(
-            self, location, building_parameters, reopt_parameters, mapperclass,
+            self, location, building_parameters, reopt_parameters,
             weatherfile, climate_zone, latitude, longitude, num_simulations=1,
             timesteps_per_hour=1):
         """
@@ -87,7 +82,7 @@ class Simulation:
             return cls(
                 data["location"],
                 data["building"], data["reopt"], data["weatherfile"],
-                data["latitude"], data["longitude"],
+                data["climate_zone"], data["latitude"], data["longitude"],
                 data.get("num_simulations", 1),
                 data.get("timesteps_per_hour", 1)
             )
@@ -115,7 +110,23 @@ class Simulation:
                 "timesteps_per_hour": self.timesteps_per_hour,
                 "default_template":"90.1-2013"
             },
-            "features": [],
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "id": "correcthorsebattery",
+                        "name": "Site Origin",
+                        "type": "Site Origin"
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [
+                            self.latitude,
+                            self.longitude
+                        ]
+                    }
+                }
+            ],
             "mappers": [],
             "scenarios": [
                 {
@@ -135,6 +146,7 @@ class Simulation:
         """
         with open(self.scenario_filename, "w+") as f:
             json.dump(self.make_scenario_json(), f, indent=2)
+        print(f"Wrote scenario JSON to {self.scenario_filename}")
 
     def write_mapper_csv(self):
         """
@@ -152,18 +164,35 @@ class Simulation:
                     "URBANopt::Scenario::BaselineMapper",
                     self.reopt_filename
                 ])
+        print(f"Wrote mapper CSV to {self.mapper_filename}")
+
+    def write_reopt_json(self):
+        """
+        Write the REopt JSON.
+        """
+        template = copy.deepcopy(DEFAULT_REOPT)
+        site = template["Scenario"]["Site"]
+
+        for k, v in self.reopt_parameters["Scenario"]["Site"].items():
+            site[k].update(v)
+
+        template["Scenario"]["time_steps_per_hour"] = self.timesteps_per_hour
+
+        with open(f"./reopt/{self.reopt_filename}", "w+") as f:
+            json.dump(template, f, indent=2)
+        print(f"Wrote reopt assumptions to ./reopt/{self.reopt_filename}")
 
     def make_geojson_polygon(self):
         """
         Return a dummy array of GeoJson coordinates since URBANopt won't accept a
         point for buildings.
         """
-        return [
+        return [[
             [self.latitude, self.longitude],
             [self.latitude, self.longitude + 0.0005],
             [self.latitude + 0.0005, self.longitude + 0.0005],
             [self.latitude + 0.0005, self.longitude]
-        ]
+        ]]
 
     def make_building_feature(self, number):
         """
@@ -202,7 +231,7 @@ class Simulation:
     def base_filename(self):
         return \
             f"residential-scenario-" \
-            f"{self.schedules_type}-schedule-" \
+            f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-steps-" \
             f"{self.location.lower().replace(' ', '-')}"
 
     def __getattr__(self, key):
@@ -222,6 +251,31 @@ class Simulation:
 
 
 if __name__ == "__main__":
-    simulation = Simulation.from_json("test_run_template.json")
+    simulation = Simulation.from_json("phoenix-demand-template.json")
     simulation.write_mapper_csv()
     simulation.write_scenario_json()
+    simulation.write_reopt_json()
+
+    try:
+        print("Starting simulation rake task...")
+        subprocess.check_output(
+            [
+                "bundle", "exec", "rake",
+                f"run_baseline[{simulation.scenario_filename}," \
+                    f"{simulation.mapper_filename}]",
+            ], cwd="../"
+        )
+        print("Finished simulation!")
+
+        print("Starting REopt optimization...")
+        subprocess.check_output(
+            [
+                "bundle", "exec", "rake",
+                f"post_process_baseline[{simulation.scenario_filename}," \
+                    f"{simulation.mapper_filename}]",
+            ], cwd="../"
+        )
+        print("Finished REopt optimization!")
+    except:
+        print("error running task")
+
