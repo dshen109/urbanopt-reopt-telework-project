@@ -3,6 +3,7 @@ import copy
 import csv
 import json
 import subprocess
+import sys
 
 DEFAULT_BUILDING = {
     "type": "Building",
@@ -251,30 +252,48 @@ class Simulation:
 
 
 if __name__ == "__main__":
-    simulation = Simulation.from_json("phoenix-demand-template.json")
+    args = sys.argv[1:]
+    if args:
+        template = sys.argv[1]
+    else:
+        raise RuntimeError("No template supplied.")
+    simulation = Simulation.from_json(template)
     simulation.write_mapper_csv()
     simulation.write_scenario_json()
     simulation.write_reopt_json()
 
     try:
+        print("Clearing old simulation files...")
+        clearing = subprocess.check_output(
+            [
+                "bundle", "exec", "rake",
+                f"clear_baseline[{simulation.scenario_filename}," \
+                    f"{simulation.mapper_filename}]",
+            ], cwd="../"
+        )
+        print(clearing.decode('utf-8'))
+        print("Old files cleared!")
+
         print("Starting simulation rake task...")
-        subprocess.check_output(
+        running = subprocess.check_output(
             [
                 "bundle", "exec", "rake",
                 f"run_baseline[{simulation.scenario_filename}," \
                     f"{simulation.mapper_filename}]",
             ], cwd="../"
         )
+        print(running.decode('utf-8'))
         print("Finished simulation!")
 
         print("Starting REopt optimization...")
-        subprocess.check_output(
+        reopting = subprocess.check_output(
             [
                 "bundle", "exec", "rake",
                 f"post_process_baseline[{simulation.scenario_filename}," \
                     f"{simulation.mapper_filename}]",
             ], cwd="../"
         )
+        print(reopting.decode('utf-8'))
         print("Finished REopt optimization!")
     except:
         print("error running task")
