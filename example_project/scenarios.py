@@ -52,7 +52,7 @@ class Simulation:
     def __init__(
             self, location, building_parameters, reopt_parameters,
             weatherfile, climate_zone, latitude, longitude, num_simulations=1,
-            timesteps_per_hour=1):
+            timesteps_per_hour=1, tag=""):
         """
         :param dict location: human-readable location
         :param dict building_parameters: Building parameters
@@ -64,6 +64,7 @@ class Simulation:
         :param int num_buildings: number of simulations to run with the building
             parameters
         :param int timesteps_per_hour: Number of timesteps per hour
+        :param str tag: Tag to add to produced files.
         """
         self.location = location
         self.building_parameters = building_parameters
@@ -74,6 +75,7 @@ class Simulation:
         self.longitude = longitude
         self.num_simulations = num_simulations
         self.timesteps_per_hour = timesteps_per_hour
+        self.tag = tag
 
     @classmethod
     def from_json(cls, filepath):
@@ -85,7 +87,7 @@ class Simulation:
                 data["building"], data["reopt"], data["weatherfile"],
                 data["climate_zone"], data["latitude"], data["longitude"],
                 data.get("num_simulations", 1),
-                data.get("timesteps_per_hour", 1)
+                data.get("timesteps_per_hour", 1), data.get("tag")
             )
         except KeyError as e:
             raise ValueError from e
@@ -230,6 +232,11 @@ class Simulation:
 
     @property
     def base_filename(self):
+        if self.tag:
+            return \
+                f"residential-scenario-{tag}-"
+                f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-" \
+                f"steps-{self.location.lower().replace(' ', '-')}"
         return \
             f"residential-scenario-" \
             f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-steps-" \
