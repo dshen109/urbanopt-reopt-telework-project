@@ -239,14 +239,12 @@ class Simulation:
     @property
     def base_filename(self):
         if not self.tag:
-            self.tag = ""
-
-        base = \
-            f"res-scenario-" \
-            f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-steps-" \
-            f"{self.location.lower().replace(' ', '-')}"
-
-        return base.
+            return \
+                f"res-scenario-" \
+                f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-" \
+                f"steps-{self.location.lower().replace(' ', '-')}"
+        else:
+            return self.tag
 
     def __getattr__(self, key):
         """
@@ -310,9 +308,9 @@ class Simulation:
         except:
             print("error running task")
             # Delete the created files.
-            subprocess.run(["rm", f"{self.mapper_filename}"], cwd="."])
-            subprocess.run(["rm", f"{self.scenario_filename}"], cwd="."])
-            subprocess.run(["rm", f"{self.scenario_filename}"], cwd="."])
+            subprocess.run(["rm", f"{self.mapper_filename}"], cwd=".")
+            subprocess.run(["rm", f"{self.scenario_filename}"], cwd=".")
+            subprocess.run(["rm", f"reopt/{self.reopt_filename}"], cwd=".")
 
 
 if __name__ == "__main__":
