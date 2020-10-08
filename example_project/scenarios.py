@@ -5,22 +5,10 @@ import json
 import subprocess
 import sys
 
-DEFAULT_BUILDING = {
-    "type": "Building",
-    "building_type": "Single-Family Detached",
-    "floor_area": 2301,
-    "footprint_area": 2301,
-    "number_of_stories_above_ground": 1,
-    "number_of_stories": 1,
-    "number_of_bedrooms": 3,
-    "foundation_type": "slab",
-    "attic_type": "attic - vented",
-    "system_type":
-        "Residential - electric resistance and central air conditioner",
-    "template":
-        "Residential IECC 2015 - Customizable Template Sep 2020",
-    "schedules_type": "default"
-}
+TEMPLATE_DIRECTORY = "./templates"
+
+with open("./templates/default_building.json", "r") as f:
+    DEFAULT_BUILDING = json.load(f)
 
 with open("./reopt/base_assumptions.json", "r") as f:
     DEFAULT_REOPT = json.load(f)
@@ -92,6 +80,21 @@ class Simulation:
         except KeyError as e:
             raise ValueError from e
 
+    @classmethod
+    def from_dict(cls, dictionary):
+        try:
+            return cls(
+                dictionary["location"],
+                dictionary["building"], dictionary["reopt"],
+                dictionary["weatherfile"], dictionary["climate_zone"],
+                dictionary["latitude"], dictionary["longitude"],
+                dictionary.get("num_simulations", 1),
+                dictionary.get("timesteps_per_hour", 1), dictionary.get("tag")
+            )
+        except KeyError as e:
+            raise ValueError from e
+
+
     def make_scenario_json(self):
         """
         Make a scenario json
@@ -150,6 +153,7 @@ class Simulation:
         with open(self.scenario_filename, "w+") as f:
             json.dump(self.make_scenario_json(), f, indent=2)
         print(f"Wrote scenario JSON to {self.scenario_filename}")
+        return self.scenario_filename
 
     def write_mapper_csv(self):
         """
@@ -168,6 +172,7 @@ class Simulation:
                     self.reopt_filename
                 ])
         print(f"Wrote mapper CSV to {self.mapper_filename}")
+        return self.mapper_filename
 
     def write_reopt_json(self):
         """
@@ -184,6 +189,7 @@ class Simulation:
         with open(f"./reopt/{self.reopt_filename}", "w+") as f:
             json.dump(template, f, indent=2)
         print(f"Wrote reopt assumptions to ./reopt/{self.reopt_filename}")
+        return self.reopt_filename
 
     def make_geojson_polygon(self):
         """
@@ -220,11 +226,11 @@ class Simulation:
 
     @property
     def mapper_filename(self):
-        return self.base_filename + ".csv"
+        return TEMPLATE_DIRECTORY + "/" + self.base_filename + ".csv"
 
     @property
     def scenario_filename(self):
-        return self.base_filename + ".json"
+        return TEMPLATE_DIRECTORY + "/" + self.base_filename + ".json"
 
     @property
     def reopt_filename(self):
@@ -232,15 +238,15 @@ class Simulation:
 
     @property
     def base_filename(self):
-        if self.tag:
-            return \
-                f"residential-scenario-{tag}-"
-                f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-" \
-                f"steps-{self.location.lower().replace(' ', '-')}"
-        return \
-            f"residential-scenario-" \
+        if not self.tag:
+            self.tag = ""
+
+        base = \
+            f"res-scenario-" \
             f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-steps-" \
             f"{self.location.lower().replace(' ', '-')}"
+
+        return base.
 
     def __getattr__(self, key):
         """
@@ -257,6 +263,57 @@ class Simulation:
 
         return object.__getattribute__(self, key)
 
+    def clear_and_run(self):
+        """
+        Run rake task.
+        """
+        try:
+            print("Clearing old simulation files...")
+            clearing = subprocess.check_output(
+                [
+                    "bundle", "exec", "rake",
+                    f"clear_baseline[{self.scenario_filename}," \
+                        f"{self.mapper_filename}]",
+                ], cwd="../"
+            )
+            print(clearing.decode('utf-8'))
+            print("Old files cleared!")
+
+            print("Starting simulation rake task...")
+            running = subprocess.check_output(
+                [
+                    "bundle", "exec", "rake",
+                    f"run_baseline[{self.scenario_filename}," \
+                        f"{self.mapper_filename}]",
+                ], cwd="../"
+            )
+            print(running.decode('utf-8'))
+            print("Finished simulation!")
+
+            print("Starting REopt optimization...")
+            reopting = subprocess.check_output(
+                [
+                    "bundle", "exec", "rake",
+                    f"post_process_baseline[{simulation.scenario_filename}," \
+                        f"{simulation.mapper_filename}]",
+                ], cwd="../"
+            )
+            print(reopting.decode('utf-8'))
+            print("Finished REopt optimization!")
+            # Move the scenario JSON into the run folder so it's traceable.
+            subprocess.run(
+                [
+                    "mv", f"{self.scenario_filename}",
+                    f"run/{self.base_filename}/"
+                ]
+            )
+        except:
+            print("error running task")
+            # Delete the created files.
+            subprocess.run(["rm", f"{self.mapper_filename}"], cwd="."])
+            subprocess.run(["rm", f"{self.scenario_filename}"], cwd="."])
+            subprocess.run(["rm", f"{self.scenario_filename}"], cwd="."])
+
 
 if __name__ == "__main__":
     args = sys.argv[1:]
@@ -269,39 +326,4 @@ if __name__ == "__main__":
     simulation.write_scenario_json()
     simulation.write_reopt_json()
 
-    try:
-        print("Clearing old simulation files...")
-        clearing = subprocess.check_output(
-            [
-                "bundle", "exec", "rake",
-                f"clear_baseline[{simulation.scenario_filename}," \
-                    f"{simulation.mapper_filename}]",
-            ], cwd="../"
-        )
-        print(clearing.decode('utf-8'))
-        print("Old files cleared!")
-
-        print("Starting simulation rake task...")
-        running = subprocess.check_output(
-            [
-                "bundle", "exec", "rake",
-                f"run_baseline[{simulation.scenario_filename}," \
-                    f"{simulation.mapper_filename}]",
-            ], cwd="../"
-        )
-        print(running.decode('utf-8'))
-        print("Finished simulation!")
-
-        print("Starting REopt optimization...")
-        reopting = subprocess.check_output(
-            [
-                "bundle", "exec", "rake",
-                f"post_process_baseline[{simulation.scenario_filename}," \
-                    f"{simulation.mapper_filename}]",
-            ], cwd="../"
-        )
-        print(reopting.decode('utf-8'))
-        print("Finished REopt optimization!")
-    except:
-        print("error running task")
-
+    simulation.clear_and_run()
