@@ -34,6 +34,10 @@ with open("./reopt/base_assumptions.json", "r") as f:
     DEFAULT_REOPT = json.load(f)
 
 
+def log(*args, **kwargs):
+    return print(*args, **kwargs)
+
+
 class Simulation:
     """
     Store simulation parameters & run simulations.
@@ -124,7 +128,7 @@ class Simulation:
             "type": "FeatureCollection",
             "project": {
                 "id": "some-id-i-guess",
-                "name": "New Project",
+                "name": f"{self.location}",
                 "surface_elevation": None,
                 "import_surrounding_buildings_as_shading": None,
                 "weather_filename": self.weatherfile,
@@ -172,7 +176,7 @@ class Simulation:
         """
         with open(self.scenario_filename, "w+") as f:
             json.dump(self.make_scenario_json(), f, indent=2)
-        print(f"Wrote scenario JSON to {self.scenario_filename}")
+        log(f"Wrote scenario JSON to {self.scenario_filename}")
         return self.scenario_filename
 
     def write_mapper_csv(self):
@@ -189,7 +193,7 @@ class Simulation:
                     str(i), f"Residential {i}",
                     "URBANopt::Scenario::BaselineMapper"
                 ])
-        print(f"Wrote mapper CSV to {self.mapper_filename}")
+        log(f"Wrote mapper CSV to {self.mapper_filename}")
         return self.mapper_filename
 
     def call_reopt(self, wait=True, use_cached=True):
@@ -206,6 +210,7 @@ class Simulation:
 
         for building_num in range(1, self.num_simulations + 1):
             # Make a name for the reopt results
+
             output_path = os.path.join(
                 REOPT_RESULTS_PATH, self.scenario_name, str(building_num),
                 self.reopt_results_filename(building_num)
@@ -214,10 +219,13 @@ class Simulation:
             if use_cached and self.reopt_result_exists(building_num):
                 continue
 
+            log(f"Running REopt for building {building_num} of "
+                  f"{self.num_simulations}")
+
             payload = self.make_reopt_payload(building_num)
-            print("Making REopt call...")
+            log("Making REopt call...")
             if wait:
-                return call_reopt_and_write(payload, API_KEY, output_path)
+                call_reopt_and_write(payload, API_KEY, output_path)
             else:
                 thread = threading.Thread(
                     target=call_reopt_and_write,
@@ -362,6 +370,8 @@ class Simulation:
         """
         Filename base that is unique based on the building simulation parameters
         (excluding reopt)
+
+        TODO: Handle adding in WFH schedules
         """
         return \
             f'home-{self.location}-{self.number_of_bedrooms}-bd-' \
@@ -385,7 +395,7 @@ class Simulation:
         schedule generator uses for the year...
         """
         begin = datetime.datetime(2007, 1, 1, 0, 0)
-        begin = begin.astimezone(pytz.timezone(self.timezone))
+        begin = pytz.timezone(self.timezone).localize(begin)
         begin = begin.astimezone(pytz.utc)
         return begin.strftime('%Y-%m-%dT%H:00:00.000Z')
 
@@ -396,7 +406,7 @@ class Simulation:
         generator uses for the year...
         """
         end = datetime.datetime(2007, 12, 31, 23, 59)
-        end = end.astimezone(pytz.timezone(self.timezone))
+        end = pytz.timezone(self.timezone).localize(end)
         end = end.astimezone(pytz.utc)
         return end.strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
@@ -405,6 +415,8 @@ class Simulation:
         """
         Return a UUID corresponding to the building simulation parameters
         (exclude all reopt stuff)
+
+        TODO: check how this works with adding in telework stuff
         """
         params = {
             "location": self.location,
@@ -464,33 +476,33 @@ class Simulation:
             post_process.append('--trace')
 
         if use_cached and self.results_exist():
-            print(
+            log(
                 "Run output already generated, using cache files in "
                 f"{self.scenario_name}")
             return
         try:
-            print("Clearing old simulation files...")
+            log("Clearing old simulation files...")
             clearing = subprocess.check_output(clear_baseline, cwd="../")
-            print(clearing.decode('utf-8'))
-            print("Old files cleared!")
-            print("Starting simulation rake task...")
+            log(clearing.decode('utf-8'))
+            log("Old files cleared!")
+            log("Starting simulation rake task...")
             running = subprocess.check_output(
                 run_baseline, cwd="../"
             )
-            print(running.decode('utf-8'))
-            print("Finished simulation!")
+            log(running.decode('utf-8'))
+            log("Finished simulation!")
             # We need to run this to get the power values to send to reopt.
-            print("Running URBANopt post-processor")
+            log("Running URBANopt post-processor")
             post_process = subprocess.check_output(
                 post_process, cwd="../"
             )
-            print(post_process.decode('utf-8'))
-            print("Finished URBANopt post-processing")
+            log(post_process.decode('utf-8'))
+            log("Finished URBANopt post-processing")
         except KeyboardInterrupt as e:
-            print("Keyboard interrupted...")
+            log("Keyboard interrupted...")
             raise e
         except Exception as e:
-            print("Error running task!")
+            log("Error running task!")
             self.cleanup()
             raise e
 
@@ -512,11 +524,12 @@ class Simulation:
         with open(run_status, "r") as f:
             results = json.load(f)
         status = results['results']
+        # Check that all the runs completed.
         for i in range(self.num_simulations):
             try:
                 if status[i]["status"] != "Complete":
                     return False
-            except IndexError as e:
+            except IndexError:
                 return False
 
         return True
@@ -526,7 +539,7 @@ class Simulation:
         # run files.
 
         # Move the scenario JSON into the run folder so it's traceable and
-        # remote reopt and CSV mapper files.
+        # remove reopt and CSV mapper files.
         subprocess.run(
             [
                 "mv", f"{self.scenario_filename}",
@@ -584,7 +597,7 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     with open(output_filepath, "w+") as f:
         json.dump(results, f)
 
-    print(f"Wrote REopt results to {output_filepath}")
+    log(f"Wrote REopt results to {output_filepath}")
 
 
 def reopt_poller(url, poll_interval=3):
@@ -607,9 +620,9 @@ def reopt_poller(url, poll_interval=3):
             status = resp_dict['outputs']['Scenario']['status']
         except KeyError:
             key_error_count += 1
-            print('REopt KeyError count: {}'.format(key_error_count))
+            log('REopt KeyError count: {}'.format(key_error_count))
             if key_error_count > key_error_threshold:
-                print(
+                log(
                     "Breaking polling loop due to KeyError count threshold of "
                     "{} exceeded.".format(key_error_threshold))
                 break
@@ -625,39 +638,46 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run our scenarios.')
     parser.add_argument('--run-all', default=False, action='store_true',
                         help=f'run all scenarios in {TEMPLATE_DIRECTORY}')
+    parser.add_argument('--pattern', type=str,
+                        help='regex pattern to restrict which files are run '
+                             'with --run-all')
     parser.add_argument('--file',
                         help=f'run a specified scenario in {TEMPLATE_DIRECTORY}')
-    parser.add_argument('--process-parallel', action='store_true',
-                        help=f"Don't wait for REopt to finish.")
-    parser.add_argument('--ignore-cache', action='store_true',
-                        help=f"Rerun OpenStudio if required.")
+    parser.add_argument('--reopt-async', action='store_true',
+                        help=f"Don't wait for REopt to finish before continuing.")
+    parser.add_argument('--ignore-scenario-cache', action='store_true',
+                        help=f"Rerun OpenStudio for each scenario.")
+    parser.add_argument('--ignore-reopt-cache', action='store_true',
+                        help=f"Rerun REopt every time.")
     parser.add_argument('--skip-reopt', action='store_true',
                         help=f"Don't run REopt on the scenarios.")
     parser.add_argument('--trace', action='store_true',
                         help="Trace rake tasks")
     parser.add_argument('--sleep', default=0, type=int,
                         help=
-                            "Number of seconds to sleep between scenario runs"
+                            "Number of seconds to sleep between scenario runs "
                             "to prevent hitting the REopt API limit. Only "
-                            "applies if the --run-all and --process-parallel"
+                            "applies if the --run-all and --reopt-async"
                             "flags are set.")
     args = parser.parse_args()
 
     start = time.monotonic()
 
-    reopt_wait = not args.process_parallel
+    reopt_wait = not args.reopt_async
 
     if args.file:
         template = os.path.join(TEMPLATE_DIRECTORY, args.file)
         simulation = Simulation.from_json(template)
         simulation.write_mapper_csv()
         simulation.write_scenario_json()
-        simulation.run_building_sim(not args.ignore_cache, trace=args.trace)
-        simulation.cleanup()
+        simulation.run_building_sim(
+            not args.ignore_scenario_cache, trace=args.trace)
+        # simulation.cleanup()
         end = time.monotonic()
-        print(f"Finished building simulation in {end - start} seconds.")
+        log(f"Finished building simulation in {end - start} seconds.")
         if not args.skip_reopt:
-            simulation.call_reopt(wait=reopt_wait)
+            simulation.call_reopt(
+                wait=reopt_wait, use_cached=not args.ignore_reopt_cache)
         end = time.monotonic()
     elif args.run_all:
         files = os.listdir(TEMPLATE_DIRECTORY)
@@ -667,40 +687,47 @@ if __name__ == "__main__":
 
         for f in files:
             if re.match(r'template-.*-\d+.json', f):
+                # Check regex match if we've specified a pattern.
+                if args.pattern and not re.match(args.pattern, f):
+                    continue
                 templates.append(f)
         if len(templates) < 10:
-            print(f"Files to run: {templates}")
+            log(f"Files to run: {templates}")
         total = len(templates)
+        number_run = 0
         start = time.monotonic()
 
         for i, template in enumerate(templates):
             loop_start = time.monotonic()
             template = os.path.join(TEMPLATE_DIRECTORY, template)
-            print(f"Running template {template}")
+
+            log(f"Running template {template}")
             simulation = Simulation.from_json(template)
             simulation.write_mapper_csv()
             simulation.write_scenario_json()
             try:
-                simulation.run_building_sim(not args.ignore_cache, args.trace)
+                simulation.run_building_sim(not args.ignore_scenario_cache, args.trace)
                 simulation.cleanup()
             except Exception as e:
-                print("ERROR:")
-                print(e)
+                log("ERROR:")
+                log(e)
             end = time.monotonic()
-            print(
+            log(
                 f"Finished building simulation in {end - loop_start} seconds.")
             try:
                 if not args.skip_reopt:
                     reopt_threads = simulation.call_reopt(wait=reopt_wait)
                     # We executed some REopt calls, so maybe wait a bit.
                     if args.sleep != 0 and reopt_threads:
-                        print(f"Sleeping for {args.sleep} seconds...")
+                        log(f"Sleeping for {args.sleep} seconds...")
                         time.sleep(args.sleep)
             except Exception as e:
-                print("Error running REopt")
-                print(e)
+                log("Error running REopt")
+                log(e)
+
             remaining = total - i - 1
-            estimated_remaining = ((end  - start) / (i + 1) * remaining) / 60
-            print(f"Simulation {i+1} of {total} finished.")
-            print("Estimated remaining time: "
+            estimated_remaining = (
+                (end  - start) / (i + 1) * remaining) / 60
+            log(f"Simulation {i+1} of {total} finished.")
+            log("Estimated remaining time: "
                   f"{round(estimated_remaining, 1)} min")
