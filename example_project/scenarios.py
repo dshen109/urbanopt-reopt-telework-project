@@ -205,12 +205,12 @@ class Simulation:
         threads = []
 
         for building_num in range(1, self.num_simulations + 1):
+            # Make a name for the reopt results
             output_path = os.path.join(
                 REOPT_RESULTS_PATH, self.scenario_name, str(building_num),
                 self.reopt_results_filename(building_num)
                 )
 
-            # Make a name for the reopt results
             payload = self.make_reopt_payload(building_num)
             print("Making REopt call...")
             if wait:
@@ -560,6 +560,8 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     with open(output_filepath, "w+") as f:
         json.dump(results, f)
 
+    print(f"Wrote REopt results to {output_filepath}")
+
 
 def reopt_poller(url, poll_interval=3):
     """
@@ -643,7 +645,6 @@ if __name__ == "__main__":
             end = time.monotonic()
             print(f"Finished building simulation in {end - start} seconds.")
             simulation.call_reopt(wait=reopt_wait)
-            end = time.monotonic()
             estimated_remaining = ((end  - start) / (i + 1) * total) / 60
-            print("Estimated remaining time: :"
+            print("Estimated remaining time: "
                   f"{round(estimated_remaining, 1)} min")
