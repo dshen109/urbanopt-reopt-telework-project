@@ -227,32 +227,32 @@ task :post_process_baseline, [:json, :csv] do |t, args|
   json = 'example_project.json' if args[:json].nil?
   csv = 'baseline_scenario.csv' if args[:csv].nil?
 
-  puts 'Running default post processor...'
+  # puts 'Running default post processor...'
   default_post_processor = URBANopt::Scenario::ScenarioDefaultPostProcessor.new(
     baseline_scenario(json, csv)
   )
   scenario_report = default_post_processor.run
   scenario_report.save
 
-  ### save feature reports
-  scenario_report.feature_reports.each do |feature_report|
-    feature_report.save_feature_report()
-  end
-  puts 'Default post processing complete!'
+  # ### save feature reports
+  # scenario_report.feature_reports.each do |feature_report|
+  #   feature_report.save_feature_report()
+  # end
+  # puts 'Default post processing complete!'
 
-  puts 'Running REopt post processor...'
+  # puts 'Running REopt post processor...'
 
-  scenario_base = default_post_processor.scenario_base
-  reopt_post_processor = URBANopt::REopt::REoptPostProcessor.new(
-    scenario_report, scenario_base.scenario_reopt_assumptions_file,
-    scenario_base.reopt_feature_assumptions, DEVELOPER_NREL_KEY
-  )
+  # scenario_base = default_post_processor.scenario_base
+  # reopt_post_processor = URBANopt::REopt::REoptPostProcessor.new(
+  #   scenario_report, scenario_base.scenario_reopt_assumptions_file,
+  #   scenario_base.reopt_feature_assumptions, DEVELOPER_NREL_KEY
+  # )
 
-  # Run house-by-house Scenario
-  scenario_report_scenario = reopt_post_processor.run_scenario_report_features(
-    scenario_report: scenario_report,
-    save_name_scenario_report: 'scenario_report_reopt_by_feature'
-  )
+  # # Run house-by-house Scenario
+  # scenario_report_scenario = reopt_post_processor.run_scenario_report_features(
+  #   scenario_report: scenario_report,
+  #   save_name_scenario_report: 'scenario_report_reopt_by_feature'
+  # )
 end
 
 ### All
