@@ -27,6 +27,10 @@ TEMPLATE_DIRECTORY = f"./templates/{TEMPLATE_DIRECTORY}"
 
 REOPT_RESULTS_PATH = "./reopt_results"
 
+# Lock for number of active threads.
+thread_lock = threading.Lock()
+REOPT_THREAD_COUNTER = 0
+
 with open("./templates/default_building.json", "r") as f:
     DEFAULT_BUILDING = json.load(f)
 
@@ -196,10 +200,12 @@ class Simulation:
         log(f"Wrote mapper CSV to {self.mapper_filename}")
         return self.mapper_filename
 
-    def call_reopt(self, wait=True, use_cached=True):
+    def call_reopt(self, wait=True, use_cached=True, sleep=0, max_threads=5):
         """
         Call reopt for the site's building(s) and write the results.
 
+        :param bool wait: Wait for REopt to return a result before continuing.
+        :param float sleep: NUmber of seconds to sleep after each REopt run.
         :return: None if wait=True or a list of thread objects otherwise.
         """
         API_KEY = os.environ.get("NREL_DEV_KEY")
@@ -223,16 +229,26 @@ class Simulation:
                   f"{self.num_simulations}")
 
             payload = self.make_reopt_payload(building_num)
-            log("Making REopt call...")
             if wait:
                 call_reopt_and_write(payload, API_KEY, output_path)
             else:
-                thread = threading.Thread(
-                    target=call_reopt_and_write,
-                    args=(payload, API_KEY, output_path)
-                )
-                thread.start()
+                # Make sure we don't go over the maximum thread count.
+                while get_num_active_reopt_threads() >= max_threads:
+                    print(f"Waiting for REopt threads to finish "
+                         f"({get_num_active_reopt_threads()} running)...")
+                    time.sleep(5)
+                with thread_lock:
+                    thread = threading.Thread(
+                        target=call_reopt_and_write,
+                        args=(payload, API_KEY, output_path)
+                    )
+                    thread.start()
+                    global REOPT_THREAD_COUNTER
+                    REOPT_THREAD_COUNTER += 1
                 threads.append(thread)
+                if sleep:
+                    print(f"Sleeping for {sleep} s after REopt call...")
+                    time.sleep(sleep)
 
         if wait:
             return None
@@ -549,6 +565,11 @@ class Simulation:
         subprocess.run(["rm", f"{self.mapper_filename}"], cwd=".")
 
 
+def get_num_active_reopt_threads():
+    with thread_lock:
+        return REOPT_THREAD_COUNTER
+
+
 def getID(mydic):
     """
     Create unique ID to tag JSON.
@@ -568,36 +589,45 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     """
     Call REopt and write results.
     """
-    root_url = 'https://developer.nrel.gov/api/reopt'
-    post_url = root_url + '/v1/job/?api_key=' + api_key
-    results_url = \
-        root_url + '/v1/job/<run_uuid>/results/?api_key=' + api_key
-    resp = requests.post(post_url, json=payload)
-    if not resp.ok:
-        msg = "REopt status code {}. {}".format(resp.status_code, resp.content)
-        raise RuntimeError(msg)
-
-    run_id_dict = json.loads(resp.text)
     try:
-        run_id = run_id_dict['run_uuid']
-    except KeyError:
-        msg = "Response from {} did not contain run_uuid.".format(post_url)
-        raise KeyError(msg)
+        log("Making REopt call...")
+        root_url = 'https://developer.nrel.gov/api/reopt'
+        post_url = root_url + '/v1/job/?api_key=' + api_key
+        results_url = \
+            root_url + '/v1/job/<run_uuid>/results/?api_key=' + api_key
+        resp = requests.post(post_url, json=payload)
+        if not resp.ok:
+            msg = "REopt status code {}. {}".format(resp.status_code,
+                                                    resp.content)
+            raise RuntimeError(msg)
 
-    results = reopt_poller(url=results_url.replace('<run_uuid>', run_id))
-
-    # Make directory if not existing
-    if not os.path.exists(os.path.dirname(output_filepath)):
+        run_id_dict = json.loads(resp.text)
         try:
-            os.makedirs(os.path.dirname(output_filepath))
-        except OSError as exc: # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
+            run_id = run_id_dict['run_uuid']
+        except KeyError:
+            msg = "Response from {} did not contain run_uuid.".format(post_url)
+            raise KeyError(msg)
 
-    with open(output_filepath, "w+") as f:
-        json.dump(results, f)
+        results = reopt_poller(url=results_url.replace('<run_uuid>', run_id))
 
-    log(f"Wrote REopt results to {output_filepath}")
+        # Make directory if not existing
+        if not os.path.exists(os.path.dirname(output_filepath)):
+            try:
+                os.makedirs(os.path.dirname(output_filepath))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
+        with open(output_filepath, "w+") as f:
+            json.dump(results, f)
+        log(f"Wrote REopt results to {output_filepath}")
+    except Exception as e:
+        print(e)
+    finally:
+        with thread_lock:
+            global REOPT_THREAD_COUNTER
+            REOPT_THREAD_COUNTER -= 1
+
 
 
 def reopt_poller(url, poll_interval=3):
@@ -615,7 +645,13 @@ def reopt_poller(url, poll_interval=3):
     status = "Optimizing..."
     while True:
         resp = requests.get(url=url, verify=False)
-        resp_dict = json.loads(resp.content)
+        try:
+            resp_dict = json.loads(resp.content)
+        except json.decoder.JSONDecodeError as e:
+            print("Error reading REopt response:")
+            print(resp.content)
+            raise e
+
         try:
             status = resp_dict['outputs']['Scenario']['status']
         except KeyError:
@@ -645,6 +681,9 @@ if __name__ == "__main__":
                         help=f'run a specified scenario in {TEMPLATE_DIRECTORY}')
     parser.add_argument('--reopt-async', action='store_true',
                         help=f"Don't wait for REopt to finish before continuing.")
+    parser.add_argument('--max-reopt-threads', default=5, type=int,
+                        help="Maximum number of simultaneous REopt jobs to "
+                             "run at any time.")
     parser.add_argument('--ignore-scenario-cache', action='store_true',
                         help=f"Rerun OpenStudio for each scenario.")
     parser.add_argument('--ignore-reopt-cache', action='store_true',
@@ -655,10 +694,10 @@ if __name__ == "__main__":
                         help="Trace rake tasks")
     parser.add_argument('--sleep', default=0, type=int,
                         help=
-                            "Number of seconds to sleep between scenario runs "
+                            "Number of seconds to sleep between REopt calls "
                             "to prevent hitting the REopt API limit. Only "
-                            "applies if the --run-all and --reopt-async"
-                            "flags are set.")
+                            "applies if the --reopt-async"
+                            "flag is set.")
     args = parser.parse_args()
 
     start = time.monotonic()
@@ -674,10 +713,11 @@ if __name__ == "__main__":
             not args.ignore_scenario_cache, trace=args.trace)
         # simulation.cleanup()
         end = time.monotonic()
-        log(f"Finished building simulation in {end - start} seconds.")
+        log(f"Finished building simulation in {round(end - start, 1)} seconds.")
         if not args.skip_reopt:
             simulation.call_reopt(
-                wait=reopt_wait, use_cached=not args.ignore_reopt_cache)
+                wait=reopt_wait, use_cached=not args.ignore_reopt_cache,
+                sleep=args.sleep, max_threads=args.max_reopt_threads)
         end = time.monotonic()
     elif args.run_all:
         files = os.listdir(TEMPLATE_DIRECTORY)
@@ -706,7 +746,8 @@ if __name__ == "__main__":
             simulation.write_mapper_csv()
             simulation.write_scenario_json()
             try:
-                simulation.run_building_sim(not args.ignore_scenario_cache, args.trace)
+                simulation.run_building_sim(
+                    not args.ignore_scenario_cache, args.trace)
                 simulation.cleanup()
             except Exception as e:
                 log("ERROR:")
@@ -716,11 +757,10 @@ if __name__ == "__main__":
                 f"Finished building simulation in {end - loop_start} seconds.")
             try:
                 if not args.skip_reopt:
-                    reopt_threads = simulation.call_reopt(wait=reopt_wait)
-                    # We executed some REopt calls, so maybe wait a bit.
-                    if args.sleep != 0 and reopt_threads:
-                        log(f"Sleeping for {args.sleep} seconds...")
-                        time.sleep(args.sleep)
+                    reopt_threads = simulation.call_reopt(
+                        wait=reopt_wait, sleep=args.sleep,
+                        use_cached=not args.ignore_reopt_cache,
+                        max_threads=args.max_reopt_threads)
             except Exception as e:
                 log("Error running REopt")
                 log(e)
@@ -731,3 +771,5 @@ if __name__ == "__main__":
             log(f"Simulation {i+1} of {total} finished.")
             log("Estimated remaining time: "
                   f"{round(estimated_remaining, 1)} min")
+            log("Total time elapsed since start: "
+                f"{round((time.monotonic() - start) / 60, 1)} min")
