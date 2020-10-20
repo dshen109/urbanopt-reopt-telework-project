@@ -181,7 +181,7 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
     arg.setDescription("This numeric field is the seed for the random number generator. Only applies if the schedules type is 'stochastic'.")
     args << arg
 
-    arg = OpenStudio::Measure::OsArgument.makeStringArgument('schedules_occupant_types', false)
+    arg = OpenStudio::Measure::OSArgument.makeStringArgument('schedules_occupant_types', false)
     arg.setDisplayName('Schedules: Occupant Types')
     arg.setDescription(
       "This string field contains specifications for which clusters to create" \
