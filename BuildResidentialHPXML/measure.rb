@@ -181,6 +181,21 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
     arg.setDescription("This numeric field is the seed for the random number generator. Only applies if the schedules type is 'stochastic'.")
     args << arg
 
+    arg = OpenStudio::Measure::OsArgument.makeStringArgument('schedules_occupant_types', false)
+    arg.setDisplayName('Schedules: Occupant Types')
+    arg.setDescription(
+      "This string field contains specifications for which clusters to create" \
+      " occupant types from. For example, a value of '121' creates a schedule " \
+      "with two occupants from cluster #1 and one occupant from cluster #2, " \
+      "regardless of the prior probabilities of those clusters " \
+      "(clusters are 0-indexed). If geometry_num_occupants is Constants.Auto, " \
+      "the length of this string overrides the the default occupancy number. " \
+      "If geometry_num_occupants is explicitly specified, the length of this " \
+      "string must match the occupant count. Clustering effects only apply " \
+      " if the schedules type is 'stochastic'."
+    )
+    args << arg
+
     arg = OpenStudio::Measure::OSArgument.makeStringArgument('weather_station_epw_filepath', true)
     arg.setDisplayName('EnergyPlus Weather (EPW) Filepath')
     arg.setDescription('Path of the EPW file.')
@@ -3032,6 +3047,7 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
              schedules_vacancy_end_month: runner.getOptionalIntegerArgumentValue('schedules_vacancy_end_month', user_arguments),
              schedules_vacancy_end_day_of_month: runner.getOptionalIntegerArgumentValue('schedules_vacancy_end_day_of_month', user_arguments),
              schedules_random_seed: runner.getOptionalIntegerArgumentValue('schedules_random_seed', user_arguments),
+             schedules_occupant_types: runner.getOptionalStringArgumentValue('schedules_occupant_types', user_arguments),
              weather_station_epw_filepath: runner.getStringArgumentValue('weather_station_epw_filepath', user_arguments),
              site_type: runner.getOptionalStringArgumentValue('site_type', user_arguments),
              geometry_unit_type: runner.getStringArgumentValue('geometry_unit_type', user_arguments),
@@ -3506,6 +3522,17 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
     error = ((args[:water_heater_type] == HPXML::WaterHeaterTypeCombiStorage) || (args[:water_heater_type] == HPXML::WaterHeaterTypeCombiTankless)) && (args[:heating_system_type] != HPXML::HVACTypeBoiler)
     errors << "water_heater_type=#{args[:water_heater_type]} and heating_system_type=#{args[:heating_system_type]}" if error
 
+    # number of occupants and their cluster types are explicitly specified
+    if args[:schedules_occupant_types].is_initialized && args[:geometry_num_occupants] != Constants.Auto
+      num_occupants = Integer(args[:geometry_num_occupants])
+      num_occupants_implied = args[:schedules_occupant_types].length
+      error = num_occupants != num_occupants_implied
+      errors << \
+        "geometry_num_occupants=#{args[:geometry_num_occupants]} and " \
+        "schedules_occupant_types.length=#{args[:schedules_occupant_types].length}" \
+        if error
+    end
+
     return warnings, errors
   end
 
@@ -3670,12 +3697,17 @@ class HPXMLFile
 
     # create the schedule
     if args[:geometry_num_occupants] == Constants.Auto
-      args[:geometry_num_occupants] = Geometry.get_occupancy_default_num(
-        args[:geometry_num_bedrooms]
-      )
+      if args[:schedules_occupant_types].is_initialized
+        args[:geometry_num_occupants] = args[:schedules_occupant_types].length
+      else
+        args[:geometry_num_occupants] = Geometry.get_occupancy_default_num(
+          args[:geometry_num_bedrooms]
+        )
+      end
     else
       args[:geometry_num_occupants] = Integer(args[:geometry_num_occupants])
     end
+
     args[:resources_path] = File.join(File.dirname(__FILE__), 'resources')
     success = schedule_generator.create(args: args)
     return false if not success

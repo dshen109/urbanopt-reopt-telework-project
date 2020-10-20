@@ -387,17 +387,37 @@ class ScheduleGenerator
     schedule_config = YAML.load_file(args[:resources_path] + '/schedules_config.yml')
 
     # pre-load the probability distribution csv files for speed
-    cluster_size_prob_map = read_activity_cluster_size_probs(resources_path: args[:resources_path])
-    event_duration_prob_map = read_event_duration_probs(resources_path: args[:resources_path])
-    activity_duration_prob_map = read_activity_duration_prob(resources_path: args[:resources_path])
-    appliance_power_dist_map = read_appliance_power_dist(resources_path: args[:resources_path])
+    cluster_size_prob_map = read_activity_cluster_size_probs(
+      resources_path: args[:resources_path]
+    )
+    event_duration_prob_map = read_event_duration_probs(
+      resources_path: args[:resources_path]
+    )
+    activity_duration_prob_map = read_activity_duration_prob(
+      resources_path: args[:resources_path]
+    )
+    appliance_power_dist_map = read_appliance_power_dist(
+      resources_path: args[:resources_path]
+    )
 
     all_simulated_values = [] # holds the markov-chain state for each of the seven simulated states for each occupant.
     # States are: 'sleeping', 'shower', 'laundry', 'cooking', 'dishwashing', 'absent', 'nothingAtHome'
     # if geometry_num_occupants = 2, period_in_a_year = 35040,  num_of_states = 7, then
     # shape of all_simulated_values is [2, 35040, 7]
     (1..args[:geometry_num_occupants]).each do |i|
-      occ_type_id = weighted_random(prng, schedule_config['occupancy_types_probability'])
+      if args[:schedules_occupant_types].is_initialized
+        occ_type_id = Integer(args[:schedules_occupant_types][i - 1])
+        if occ_type_id >= schedule_config['occupancy_types_probability'].length
+          @runner.registerError(
+            "Occupant type of #{occ_type_id} does not exist in configuration."
+          )
+          return false
+        end
+      else
+        occ_type_id = weighted_random(
+          prng, schedule_config['occupancy_types_probability']
+        )
+      end
       init_prob_file_weekday = args[:resources_path] + "/schedules_weekday_mkv_chain_initial_prob_cluster_#{occ_type_id}.csv"
       initial_prob_weekday = CSV.read(init_prob_file_weekday)
       initial_prob_weekday = initial_prob_weekday.map { |x| x[0].to_f }
@@ -1065,6 +1085,8 @@ class ScheduleGenerator
     return sch.min + (full_occupancy_current_val - sch.min) * active_occupant_percentage
   end
 
+  # Given a RNG and array of probability weights, return an index in that array
+  # based on the weighted probabilities
   def weighted_random(prng, weights)
     n = prng.rand
     cum_weights = 0
@@ -1074,7 +1096,7 @@ class ScheduleGenerator
         return index
       end
     end
-    return weights.size - 1 # If the prob weight don't sum to n, return last index
+    return weights.size - 1 # If the prob weight don't exceed n, return last index
   end
 
   def get_holiday_lighting_sch(model, runner, holiday_sch)
