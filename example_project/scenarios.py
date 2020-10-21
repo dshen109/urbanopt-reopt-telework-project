@@ -591,11 +591,11 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     """
     try:
         log("Making REopt call...")
-        root_url = 'https://developer.nrel.gov/api/reopt'
+        root_url = "https://develop.iac-c110p.nrel.gov"
         post_url = root_url + '/v1/job/?api_key=' + api_key
         results_url = \
             root_url + '/v1/job/<run_uuid>/results/?api_key=' + api_key
-        resp = requests.post(post_url, json=payload)
+        resp = requests.post(post_url, json=payload, verify=False)
         if not resp.ok:
             msg = "REopt status code {}. {}".format(resp.status_code,
                                                     resp.content)
@@ -773,3 +773,6 @@ if __name__ == "__main__":
                   f"{round(estimated_remaining, 1)} min")
             log("Total time elapsed since start: "
                 f"{round((time.monotonic() - start) / 60, 1)} min")
+
+    if REOPT_THREAD_COUNTER == 0:
+        sys.exit(0)
