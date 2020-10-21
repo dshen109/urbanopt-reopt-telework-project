@@ -118,7 +118,7 @@ class Simulation:
                 num_simulations=dictionary.get("num_simulations", 1),
                 timesteps_per_hour=dictionary.get("timesteps_per_hour", 1),
                 tag=dictionary.get("tag"),
-                timezone=dictionary['timezone']
+                timezone=dictionary['timezone'],
             )
         except KeyError as e:
             raise ValueError from e
@@ -339,7 +339,11 @@ class Simulation:
         # Populate with the scenario properties, but fall back to defaults if
         # necessary.
         for key in DEFAULT_BUILDING.keys():
-            output["properties"][key] = getattr(self, key)
+            building_parameter = getattr(self, key)
+            if building_parameter is None or building_parameter == "":
+                continue
+            output["properties"][key] = building_parameter
+
         return output
 
     @property
@@ -389,10 +393,17 @@ class Simulation:
 
         TODO: Handle adding in WFH schedules
         """
-        return \
-            f'home-{self.location}-{self.number_of_bedrooms}-bd-' \
-            f'{self.floor_area}-sched-{self.schedules_type}-' \
-            f'{self.building_sim_uuid}'.replace(' ', '-').lower()
+        if self.building_parameters.get('schedules_occupant_types'):
+            return \
+                f'home-{self.location}-{self.number_of_bedrooms}-bd-' \
+                f'{self.floor_area}-sched-{self.schedules_type}-occ-' \
+                f'{self.building_parameters.get("schedules_occupant_types")}-' \
+                f'{self.building_sim_uuid}'.replace(' ', '-').lower()
+        else:
+            return \
+                f'home-{self.location}-{self.number_of_bedrooms}-bd-' \
+                f'{self.floor_area}-sched-{self.schedules_type}-' \
+                f'{self.building_sim_uuid}'.replace(' ', '-').lower()
 
     @property
     def base_filename(self):
@@ -411,9 +422,10 @@ class Simulation:
         schedule generator uses for the year...
         """
         begin = datetime.datetime(2007, 1, 1, 0, 0)
-        begin = pytz.timezone(self.timezone).localize(begin)
-        begin = begin.astimezone(pytz.utc)
-        return begin.strftime('%Y-%m-%dT%H:00:00.000Z')
+        # begin = pytz.timezone(self.timezone).localize(begin)
+        # begin = begin.astimezone(pytz.utc)
+        return begin.strftime('%Y-%m-%dT%H:00:00.000')
+        # return begin.strftime('%Y-%m-%dT%H:00:00.000Z')
 
     @property
     def end_date(self):
@@ -422,9 +434,10 @@ class Simulation:
         generator uses for the year...
         """
         end = datetime.datetime(2007, 12, 31, 23, 59)
-        end = pytz.timezone(self.timezone).localize(end)
-        end = end.astimezone(pytz.utc)
-        return end.strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        # end = pytz.timezone(self.timezone).localize(end)
+        # end = end.astimezone(pytz.utc)
+        return end.strftime('%Y-%m-%dT%H:%M:%S.000')
+        # return end.strftime('%Y-%m-%dT%H:%M:%S.000Z')
 
     @property
     def building_sim_uuid(self):
@@ -524,8 +537,9 @@ class Simulation:
 
     def results_exist(self):
         """
-        Return true if there is a folder in `run` with the same name and the
-        appropriate folders are populated
+        Return true if the scenario has already been run
+        (there is a folder in `run` with the same name and the appropriate
+        folders are populated)
         """
         if not (self.scenario_name in os.listdir("./run")):
             return False
@@ -733,6 +747,8 @@ if __name__ == "__main__":
                 templates.append(f)
         if len(templates) < 10:
             log(f"Files to run: {templates}")
+        # sort the templates so we get the same ordering.
+        templates = sorted(templates)
         total = len(templates)
         number_run = 0
         start = time.monotonic()
