@@ -3525,12 +3525,13 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
     # number of occupants and their cluster types are explicitly specified
     if args[:schedules_occupant_types].is_initialized && args[:geometry_num_occupants] != Constants.Auto
       num_occupants = Integer(args[:geometry_num_occupants])
-      num_occupants_implied = args[:schedules_occupant_types].length
+      num_occupants_implied = args[:schedules_occupant_types].get.length
       error = num_occupants != num_occupants_implied
-      errors << \
-        "geometry_num_occupants=#{args[:geometry_num_occupants]} and " \
-        "schedules_occupant_types.length=#{args[:schedules_occupant_types].length}" \
-        if error
+      if error:
+        errors << \
+          "geometry_num_occupants=#{args[:geometry_num_occupants]} and " \
+          "schedules_occupant_types.length=#{num_occupants_implied}"
+      end
     end
 
     return warnings, errors
@@ -3698,7 +3699,8 @@ class HPXMLFile
     # create the schedule
     if args[:geometry_num_occupants] == Constants.Auto
       if args[:schedules_occupant_types].is_initialized
-        args[:geometry_num_occupants] = args[:schedules_occupant_types].length
+        args[:geometry_num_occupants] = \
+          args[:schedules_occupant_types].get.length
       else
         args[:geometry_num_occupants] = Geometry.get_occupancy_default_num(
           args[:geometry_num_bedrooms]
