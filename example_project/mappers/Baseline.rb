@@ -570,6 +570,13 @@ module URBANopt
             rescue NoMethodError
             end
 
+            # For stochastic schedules, add in the specific occupancy types, if
+            # specified.
+            begin
+              args[:schedules_occupant_types] = feature.schedules_occupant_types
+            rescue NoMethodError
+            end
+
             template = nil
             begin
               template = feature.template
