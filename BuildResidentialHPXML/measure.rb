@@ -3527,7 +3527,7 @@ class BuildResidentialHPXML < OpenStudio::Measure::ModelMeasure
       num_occupants = Integer(args[:geometry_num_occupants])
       num_occupants_implied = args[:schedules_occupant_types].get.length
       error = num_occupants != num_occupants_implied
-      if error:
+      if error
         errors << \
           "geometry_num_occupants=#{args[:geometry_num_occupants]} and " \
           "schedules_occupant_types.length=#{num_occupants_implied}"
