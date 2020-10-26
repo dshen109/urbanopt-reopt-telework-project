@@ -27,6 +27,11 @@ TEMPLATE_DIRECTORY = f"./templates/{TEMPLATE_DIRECTORY}"
 
 REOPT_RESULTS_PATH = "./reopt_results"
 
+DEFAULT_REOPT_URL = 'https://developer.nrel.gov/api/reopt'
+
+REOPT_URL = os.environ.get('REOPT_URL', DEFAULT_REOPT_URL)
+REOPT_URL = 'https://develop.iac-c110p.nrel.gov/v1/job'
+
 # Lock for number of active threads.
 thread_lock = threading.Lock()
 REOPT_THREAD_COUNTER = 0
@@ -605,11 +610,14 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     """
     try:
         log("Making REopt call...")
-        root_url = "https://develop.iac-c110p.nrel.gov"
+        root_url = REOPT_URL
         post_url = root_url + '/v1/job/?api_key=' + api_key
         results_url = \
             root_url + '/v1/job/<run_uuid>/results/?api_key=' + api_key
-        resp = requests.post(post_url, json=payload, verify=False)
+        # Turn off verification because the private server certificate is
+        # expired...
+        verify = root_url == DEFAULT_REOPT_URL
+        resp = requests.post(post_url, json=payload, verify=verify)
         if not resp.ok:
             msg = "REopt status code {}. {}".format(resp.status_code,
                                                     resp.content)
