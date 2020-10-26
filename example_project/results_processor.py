@@ -24,8 +24,8 @@ class Results:
 
     def to_dataframe(self, selections={}, scenarios=[]):
         """
-        :param dict selections: key value pair of column and column values that
-            must be satisfied, e.g. {"location": "San Diego"} will only return
+        :param dict selections: Filter of column and column values that
+            must all satisfied, e.g. {"location": "San Diego"} will only return
             entries in San Diego.
         :param lst scenarios: List of scenario IDs that must be matched
         """
@@ -114,8 +114,14 @@ class Results:
         if scenario in self._scenarios:
             return self._scenarios[scenario]
 
-        with open(os.path.join(self.run_dir, scenario, "urbanopt_scenario.json"), "r") as f:
-            scenario_params = self.extract_scenario_params(json.load(f))
+        try:
+            with open(os.path.join(self.run_dir, scenario,
+                                   "urbanopt_scenario.json"), "r") as f:
+                scenario_params = self.extract_scenario_params(json.load(f))
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"scenario {scenario} has no description json"
+            ) from e
         self._scenarios[scenario] = scenario_params
         return scenario_params
 
@@ -136,6 +142,10 @@ class Results:
         "schedules_type": "default"
         """
         schedules_type = scenario_json['features'][1]['properties']['schedules_type']
+        schedules_occupant_types = \
+            scenario_json['features'][1]['properties'].get(
+                'schedules_occupant_types'
+        )
         floor_area = scenario_json['features'][1]['properties']['floor_area']
         climate_zone = scenario_json['project']['climate_zone']
         weatherfile = scenario_json['project']['weather_filename']
@@ -148,6 +158,7 @@ class Results:
 
         return {
             "schedules_type": schedules_type,
+            "schedules_occupant_types": schedules_occupant_types,
             "floor_area": floor_area,
             "climate_zone": climate_zone,
             "weatherfile": weatherfile,
@@ -235,9 +246,11 @@ class Results:
 
     def get_scenario_electricity_usage(
             self, location, schedules_type="default", building_num=1,
-            num_simulations=1):
+            num_simulations=1, occupant_types=None):
         """
         Get electricity usage data for the described scenario.
+
+        Retunrs the first scenario ID that matches...
         """
         params = {
             "location": location,
@@ -327,15 +340,15 @@ class Results:
                 for k, v in params.items():
                     if k == "building_num":
                         continue
-                    elif isinstance(v, (int, float, str)):
-                        if scenario_params[k] != v:
+                    elif isinstance(v, (int, float, str)) or v is None:
+                        if scenario_params.get(k) != v:
                             match = False
                             break
                     else:
                         # If we're given a list of choices, handle those.
                         any_match = False
                         for choice in v:
-                            if scenario_params[k] == choice:
+                            if scenario_params.get(k) == choice:
                                 any_match = True
                                 break
                         if not any_match:
