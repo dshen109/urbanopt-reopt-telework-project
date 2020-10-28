@@ -30,7 +30,6 @@ REOPT_RESULTS_PATH = "./reopt_results"
 DEFAULT_REOPT_URL = 'https://developer.nrel.gov/api/reopt'
 
 REOPT_URL = os.environ.get('REOPT_URL', DEFAULT_REOPT_URL)
-REOPT_URL = 'https://develop.iac-c110p.nrel.gov/v1/job'
 
 # Lock for number of active threads.
 thread_lock = threading.Lock()
@@ -449,8 +448,6 @@ class Simulation:
         """
         Return a UUID corresponding to the building simulation parameters
         (exclude all reopt stuff)
-
-        TODO: check how this works with adding in telework stuff
         """
         params = {
             "location": self.location,
@@ -462,6 +459,10 @@ class Simulation:
             "timesteps_per_hour": self.timesteps_per_hour,
         }
         params = {**params, **self.building_parameters}
+        # If occupants_type isn't set, don't include it for backcompatibility
+        if 'schedules_occupant_types' in params and \
+                not params['schedules_occupant_types']:
+            del params['schedules_occupant_types']
         return getID(params)
 
 
