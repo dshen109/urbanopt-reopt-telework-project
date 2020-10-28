@@ -610,8 +610,8 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     Call REopt and write results.
     """
     try:
-        log("Making REopt call...")
         root_url = REOPT_URL
+        log(f"Making REopt call to {root_url}...")
         post_url = root_url + '/v1/job/?api_key=' + api_key
         results_url = \
             root_url + '/v1/job/<run_uuid>/results/?api_key=' + api_key
@@ -632,6 +632,11 @@ def call_reopt_and_write(payload, api_key, output_filepath):
             raise KeyError(msg)
 
         results = reopt_poller(url=results_url.replace('<run_uuid>', run_id))
+
+        if results['outputs']['Scenario']['status'] != 'optimal':
+            raise RuntimeError(
+                f"Job {run_id} completed with non-optimal status: "
+                f"{results['outputs']['Scenario']['status']}")
 
         # Make directory if not existing
         if not os.path.exists(os.path.dirname(output_filepath)):
@@ -662,7 +667,6 @@ def reopt_poller(url, poll_interval=3):
     :param poll_interval: seconds
     :return: dictionary response (once status is not "Optimizing...")
     """
-
     key_error_count = 0
     key_error_threshold = 3
     status = "Optimizing..."
