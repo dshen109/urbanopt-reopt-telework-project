@@ -3,8 +3,10 @@ Functionality to aid in processing results.
 """
 import functools
 from glob import glob
-import re
+import itertools
 import os
+import re
+
 import pandas as pd
 import ujson as json
 
@@ -101,7 +103,9 @@ class Results:
 
     @staticmethod
     def get_leaf_jsons(path):
-        return [y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.json'))]
+        return [
+            y for x in os.walk(path) for y in glob(os.path.join(x[0], '*.json'))
+        ]
 
     def load_scenario(self, scenario):
         """
@@ -244,18 +248,81 @@ class Results:
             "savings": savings
         }
 
+    def get_electricity_usage_and_occupancy(
+            self, locations, schedules_types, building_nums,
+            occupant_types=[None], multiindex=True
+        ):
+        """
+        Return a (possibly multi-indexed) DataFrame with the desired parameters.
+
+        The innermost index will have a datetimeindex
+
+        :param lst locations: List of locations to query
+        :param lst schedules_types: Schedules types to query
+        :param lst building_nums: Building nums to get.
+        :param lst occupant_types: list of occupant types
+        """
+        combos = itertools.product(
+            locations, schedules_types, building_nums, occupant_types,
+        )
+        runs = []
+        for location, schedule, building_num, occupants in combos:
+            if schedule == 'default':
+                if occupants:
+                    continue
+                elif building_num != 1:
+                    continue
+            try:
+                power = self.get_scenario_electricity_usage(
+                    location, schedule, building_num, occupants
+                )
+                occ_schedule = self.get_scenario_occupant_schedule(
+                    location, building_num, occupants
+                )
+            except FileNotFoundError as e:
+                print(e)
+                continue
+            occ_schedule.columns = [c + '_sched' for c in occ_schedule.columns]
+            data = pd.concat([power, occ_schedule], axis=1)
+            data['building_num'] = building_num
+            data['schedules_type'] = schedule
+            data['occupant_types'] = occupants
+            data['location'] = location
+            runs.append(data)
+            print(
+                f"Loaded loc={location}, schedule={schedule}, "
+                f"building_num={building_num}, occupants={occupants}"
+            )
+        total = pd.concat(runs)
+
+        if multiindex:
+            return pd.pivot_table(
+                total,
+                index=[
+                    'location', 'schedules_type', 'occupant_types',
+                    'building_num', 'Datetime'
+                ]
+            )
+        else:
+            return total
+
     def get_scenario_electricity_usage(
             self, location, schedules_type="default", building_num=1,
-            num_simulations=1, occupant_types=None):
+            occupant_types=None):
         """
-        Get electricity usage data for the described scenario.
+        Get electricity usage data for the described scenario(s).
 
-        Retunrs the first scenario ID that matches...
+        Returns the first scenario ID that matches the given parameters,
+        regardless of how many other matching scenarios there are.
+
+        Labels returned are labeled with the left bin edge
+        (different than EnergyPlus outputs).
         """
         params = {
             "location": location,
             "schedules_type": schedules_type,
             "building_num": building_num,
+            "schedules_occupant_types": occupant_types,
         }
         for scenario in self.get_matching_scenarios(params):
             # Check if it matches
@@ -271,13 +338,18 @@ class Results:
                 )
             except FileNotFoundError as e:
                 # Probably because the building number doesn't exist
-                raise FileNotFoundError(f"No building number {building_num}") from e
+                raise FileNotFoundError(
+                    f"No building number {building_num}") from e
             # Check and make sure the timestep matches what we expect.
             report_timestep = (report.index[1] - report.index[0]).total_seconds()
             if not (3600 / scenario_params["timesteps_per_hour"] == report_timestep):
                 raise RuntimeError(
                     "Mismatch in simulated timestep vs. scenario timestep, "
                     f"building {building_num} of {self.scenario_name}")
+
+            min_per_step = int(60 / scenario_params["timesteps_per_hour"])
+            report = report.resample(f"{min_per_step}T",
+                                     closed='right', label='left').mean()
 
             electricity_cols = [
                 c for c in report.columns if "kWh" in c and "Electricity" in c
@@ -288,10 +360,10 @@ class Results:
 
         raise FileNotFoundError(
             f"No scenario with location {location} found that satisfies "
-            f"schedules_type={schedules_type}, building_num={building_num}",
-            f"num_simulations={num_simulations}")
+            f"schedules_type={schedules_type}, building_num={building_num}")
 
-    def get_scenario_schedule(self, location, building_num=1, num_simulations=1):
+    def get_scenario_occupant_schedule(self, location, building_num=1,
+                                       occupant_types=None):
         """
         Get the occupant schedule associated with the keyword descriptors.
         """
@@ -299,6 +371,7 @@ class Results:
             "location": location,
             "schedules_type": "stochastic",
             "building_num": building_num,
+            "schedules_occupant_types": occupant_types
         }
         for scenario in self.get_matching_scenarios(params):
             # Load up the schedule file.
@@ -312,7 +385,7 @@ class Results:
 
             index = self.get_scenario_electricity_usage(
                 location, 'stochastic', building_num=building_num,
-                num_simulations=num_simulations).index
+                occupant_types=occupant_types).index
 
             report.index = index
 
@@ -320,7 +393,7 @@ class Results:
 
         raise FileNotFoundError(
             f"No scenario with location {location} found that satisfies "
-            f"building_num={building_num}, num_simulations={num_simulations}")
+            f"building_num={building_num}, occupant_types={occupant_types}")
 
     def get_matching_scenarios(self, params=None):
         """
