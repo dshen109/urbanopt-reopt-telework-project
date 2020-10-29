@@ -102,24 +102,6 @@
         "airVelocitySchedule":"Air Velocity Schedule"
       }
     },{
-      "measure_dir_name": "IncreaseInsulationRValueForExteriorWalls",
-      "arguments": {
-        "__SKIP__": true,
-        "r_value": 10
-      }
-    },{
-      "measure_dir_name": "ReduceElectricEquipmentLoadsByPercentage",
-      "arguments": {
-        "__SKIP__": true,
-        "elecequip_power_reduction_percent": 20
-      }
-    },{
-      "measure_dir_name": "ReduceLightingLoadsByPercentage",
-      "arguments": {
-        "__SKIP__": true,
-        "lighting_power_reduction_percent": 30
-      }
-    },{
       "measure_dir_name": "predictive_thermostats",
       "arguments": {
         "__SKIP__": true
@@ -134,13 +116,6 @@
         "charge_start": "23:00",
         "inter_sp": 46
         }
-    },{
-      "measure_dir_name": "add_packaged_ice_storage",
-      "arguments": {
-        "__SKIP__": true,
-        "size_mult": "0.75",
-        "charge_start": "23:00"
-      }
     },{
       "measure_dir_name": "default_feature_reports",
       "arguments": {
