@@ -211,7 +211,7 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
       end
       if people.size == 0
         runner.registerInfo(
-          "Zone #{zone.name} has no people, predictive thermostat not "
+          "Zone #{zone.name} has no people, predictive thermostat not " \
           "applicable."
         )
         next
