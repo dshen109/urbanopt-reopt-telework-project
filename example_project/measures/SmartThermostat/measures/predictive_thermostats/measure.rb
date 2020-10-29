@@ -71,8 +71,10 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
       return true
     end
 
-    occ_threshold = runner.getDoubleArgumentValue("occ_threshold",user_arguments)
-    occ_threshold_mult = occ_threshold/100
+    occ_threshold = runner.getDoubleArgumentValue(
+      "occ_threshold", user_arguments
+    )
+    occ_threshold_mult = occ_threshold / 100
 
     # Method to find the maximum profile value for a schedule,
     # not including values from the summer and winter design days.
@@ -199,7 +201,6 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
     occ_sch_to_htg_sch_map = {}
     occ_sch_to_clg_sch_map = {}
     model.getThermalZones.each do |zone|
-
       # Skip zones that have no occupants
       # or have occupants with no schedule
       people = []
