@@ -93,7 +93,7 @@
         "use_upstream_args": false
       }
     },{
-      "measure_dir_name":"PredictedMeanVote",
+      "measure_dir_name": "PredictedMeanVote",
       "arguments":{
         "__SKIP__": true,
         "comfortWarnings":true,
@@ -102,9 +102,32 @@
         "airVelocitySchedule":"Air Velocity Schedule"
       }
     },{
-      "measure_dir_name": "predictive_thermostats",
+      "measure_dir_name": "ResidentialHVACCoolingSetpoints",
       "arguments": {
-        "__SKIP__": true
+        "__SKIP__": true,
+        "weekday_setpoint": 76,
+        "weekend_setpoint": 76,
+        "weekday_offset_magnitude": 0,
+        "weekend_offset_magnitude": 0,
+        "weekday_offset_schedule":
+          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "weekend_offset_schedule":
+          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "use_auto_season": false
+      }
+    },{
+      "measure_dir_name": "ResidentialHVACHeatingSetpoints",
+      "arguments: {
+        "__SKIP__": true,
+        "weekday_setpoint": 71,
+        "weekend_setpoint": 71,
+        "weekday_offset_magnitude": 0,
+        "weekend_offset_magnitude": 0,
+        "weekday_offset_schedule":
+          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "weekend_offset_schedule":
+          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+        "use_auto_season": false
       }
     },{
       "measure_dir_name": "add_central_ice_storage",
