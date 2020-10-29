@@ -7,16 +7,7 @@
 # see the URL below for access to C++ documentation on model objects (click on "model" in the main window to view model objects)
 # http://openstudio.nrel.gov/sites/openstudio.nrel.gov/files/nv_data/cpp_documentation_it/model/html/namespaces.html
 
-resources_path = File.absolute_path(
-  File.join(File.dirname(__FILE__), "../HPXMLtoOpenStudio/resources")
-)
-unless File.exists? resources_path
-  # Hack to run measures in the OS App since applied measures are copied off
-  # into a temporary directory
-  resources_path = File.join(
-    OpenStudio::BCLMeasure::userMeasuresDir.to_s, "HPXMLtoOpenStudio/resources"
-  )
-end
+resources_path = File.absolute_path(File.join(File.dirname(__FILE__), "../BuildResidentialModel/resources"))
 require File.join(resources_path, "constants")
 require File.join(resources_path, "weather")
 require File.join(resources_path, "hvac")
