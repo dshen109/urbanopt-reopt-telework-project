@@ -1,0 +1,94 @@
+<measure>
+  <schema_version>3.0</schema_version>
+  <name>improved_duct_routing</name>
+  <uid>4c6d5136-8946-4914-be69-4738be1ad1a5</uid>
+  <version_id>bf3fd2fe-00ce-41bb-a93e-756f55e814cb</version_id>
+  <xml_checksum>D4024775</xml_checksum>
+  <class_name>ImprovedDuctRouting</class_name>
+  <display_name>Improved Duct Routing</display_name>
+  <description>The more restrictions and bends in the ductwork that air must move through to reach a space, the greater the fan energy required to move the air.  Using larger ducts or routing them to avoid restrictions and bends can decrease fan energy.</description>
+  <modeler_description>For each AirLoop in the model, reduce the fan pressure drop by the user-specified amount (default 10%).  This default is a conservative estimate; further reductions may be achieved, but may not be practical based on size and cost constraints.</modeler_description>
+  <arguments>
+    <argument>
+      <name>run_measure</name>
+      <display_name>Run Measure</display_name>
+      <description>integer argument to run measure [1 is run, 0 is no run]</description>
+      <type>Integer</type>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>1</default_value>
+    </argument>
+    <argument>
+      <name>pressure_drop_reduction_pct</name>
+      <display_name>Pressure Drop Reduction Percent</display_name>
+      <type>Double</type>
+      <units>%</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>10</default_value>
+    </argument>
+  </arguments>
+  <provenances/>
+  <tags>
+    <tag>Electric Lighting.Electric Lighting Controls</tag>
+  </tags>
+  <attributes>
+    <attribute>
+      <name>Measure Type</name>
+      <value>ModelMeasure</value>
+      <datatype>string</datatype>
+    </attribute>
+    <attribute>
+      <name>Intended Software Tool</name>
+      <value>Analysis Spreadsheet</value>
+      <datatype>string</datatype>
+    </attribute>
+    <attribute>
+      <name>Intended Use Case</name>
+      <value>New Construction EE</value>
+      <datatype>string</datatype>
+    </attribute>
+    <attribute>
+      <name>Intended Use Case</name>
+      <value>Retrofit EE</value>
+      <datatype>string</datatype>
+    </attribute>
+  </attributes>
+  <files>
+    <file>
+      <filename>secondary_school_90.1-2010.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>DB233375</checksum>
+    </file>
+    <file>
+      <filename>small_office_1980-2004.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>2B663484</checksum>
+    </file>
+    <file>
+      <filename>improved_duct_routing_test.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>test</usage_type>
+      <checksum>8E62E0B0</checksum>
+    </file>
+    <file>
+      <version>
+        <software_program>OpenStudio</software_program>
+        <identifier>1.5.0</identifier>
+        <min_compatible>1.5.0</min_compatible>
+      </version>
+      <filename>measure.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>script</usage_type>
+      <checksum>DBDA5D0C</checksum>
+    </file>
+    <file>
+      <filename>small_office_1980-2004_duct_routing.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>C13F7DE0</checksum>
+    </file>
+  </files>
+</measure>
