@@ -73,7 +73,7 @@ class Simulation:
     def __init__(
             self, location, building_parameters, reopt_parameters,
             weatherfile, climate_zone, latitude, longitude, timezone,
-            num_simulations=1, timesteps_per_hour=1, tag=""):
+            num_simulations=1, scenario_timesteps_per_hour=1, tag=""):
         """
         :param dict location: human-readable location
         :param dict building_parameters: Building parameters
@@ -95,7 +95,9 @@ class Simulation:
         self.latitude = latitude
         self.longitude = longitude
         self.num_simulations = num_simulations
-        self.timesteps_per_hour = timesteps_per_hour
+        self.scenario_timesteps_per_hour = scenario_timesteps_per_hour
+        # TODO: make this settable somehow...
+        self.reopt_timesteps_per_hour = 1
         self.tag = tag
         self.timezone = timezone
 
@@ -120,7 +122,8 @@ class Simulation:
                 latitude=dictionary["latitude"],
                 longitude=dictionary["longitude"],
                 num_simulations=dictionary.get("num_simulations", 1),
-                timesteps_per_hour=dictionary.get("timesteps_per_hour", 1),
+                scenario_timesteps_per_hour=\
+                    dictionary.get("timesteps_per_hour", 1),
                 tag=dictionary.get("tag"),
                 timezone=dictionary['timezone'],
             )
@@ -145,7 +148,7 @@ class Simulation:
                 "cec_climate_zone": None,
                 "begin_date": self.begin_date,
                 "end_date": self.end_date,
-                "timesteps_per_hour": self.timesteps_per_hour,
+                "timesteps_per_hour": self.scenario_timesteps_per_hour,
                 "default_template":"90.1-2013"
             },
             "features": [
@@ -238,7 +241,7 @@ class Simulation:
             else:
                 # Make sure we don't go over the maximum thread count.
                 while get_num_active_reopt_threads() >= max_threads:
-                    print(f"Waiting for REopt threads to finish "
+                    print(f"Waiting for other REopt threads to finish "
                          f"({get_num_active_reopt_threads()} running)...")
                     time.sleep(5)
                 with thread_lock:
@@ -280,7 +283,8 @@ class Simulation:
         for k, v in self.reopt_parameters["Scenario"]["Site"].items():
             site[k].update(v)
 
-        template["Scenario"]["time_steps_per_hour"] = self.timesteps_per_hour
+        # TODO: Make this configurable somehow...
+        template["Scenario"]["time_steps_per_hour"] = self.reopt_timesteps_per_hour
         template["Scenario"]["Site"]["LoadProfile"] = {
             "percent_share": 100,
             "year": 2007,
@@ -304,12 +308,12 @@ class Simulation:
         )
         # Check and make sure the timestep matches what we expect.
         report_timestep = (report.index[1] - report.index[0]).total_seconds()
-        if not (3600 / self.timesteps_per_hour == report_timestep):
+        if not (3600 / self.scenario_timesteps_per_hour == report_timestep):
             raise RuntimeError(
                 "Mismatch in simulated timestep vs. scenario timestep, "
                 f"building {building_num} of {self.scenario_name}")
         return round(
-            report["Electricity:Facility(kWh)"] * self.timesteps_per_hour, 3
+            report["Electricity:Facility(kWh)"] * self.scenario_timesteps_per_hour, 3
         ).tolist()
 
 
@@ -373,7 +377,7 @@ class Simulation:
         storage_rebate = \
             reopt_site["Storage"]["total_rebate_us_dollars_per_kwh"]
 
-        timesteps = self.timesteps_per_hour
+        timesteps = self.reopt_timesteps_per_hour
 
         # Make a unique UUID
         uuid = getID(
@@ -414,7 +418,7 @@ class Simulation:
         if not self.tag:
             return \
                 f"res-scenario-" \
-                f"{self.schedules_type}-schedule-{self.timesteps_per_hour}-" \
+                f"{self.schedules_type}-schedule-{self.scenario_timesteps_per_hour}-" \
                 f"steps-{self.location.lower().replace(' ', '-')}"
         else:
             return self.tag
@@ -456,7 +460,7 @@ class Simulation:
             "latitude": self.latitude,
             "longitude": self.longitude,
             "num_simulations": self.num_simulations,
-            "timesteps_per_hour": self.timesteps_per_hour,
+            "timesteps_per_hour": self.scenario_timesteps_per_hour,
         }
         params = {**params, **self.building_parameters}
         # If occupants_type isn't set, don't include it for backcompatibility
@@ -610,6 +614,7 @@ def call_reopt_and_write(payload, api_key, output_filepath):
     Call REopt and write results.
     """
     try:
+        start = time.monotonic()
         root_url = REOPT_URL
         log(f"Making REopt call to {root_url}...")
         post_url = root_url + '/v1/job/?api_key=' + api_key
@@ -634,6 +639,9 @@ def call_reopt_and_write(payload, api_key, output_filepath):
         results = reopt_poller(url=results_url.replace('<run_uuid>', run_id))
 
         if results['outputs']['Scenario']['status'] != 'optimal':
+            error_msg = results['messages'].get('error')
+            if error_msg:
+                print(error_msg)
             raise RuntimeError(
                 f"Job {run_id} completed with non-optimal status: "
                 f"{results['outputs']['Scenario']['status']}")
@@ -649,6 +657,8 @@ def call_reopt_and_write(payload, api_key, output_filepath):
         with open(output_filepath, "w+") as f:
             json.dump(results, f)
         log(f"Wrote REopt results to {output_filepath}")
+        end = time.monotonic()
+        print(f"Run {run_id} took {round(end - start)} seconds to finish.")
     except Exception as e:
         print(e)
     finally:
