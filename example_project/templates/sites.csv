@@ -1,2 +1,9 @@
 location,latitude,longitude,climate_zone,weatherfile,schedules_type,num_simulations,timesteps_per_hour,occupant_types
+Fargo,46.8772,-96.7898,7A,USA_ND_Fargo-Hector.Intl.AP.727530_TMY3.epw,stochastic,10,2,000
 Fargo,46.8772,-96.7898,7A,USA_ND_Fargo-Hector.Intl.AP.727530_TMY3.epw,stochastic,10,2,111
+Fargo,46.8772,-96.7898,7A,USA_ND_Fargo-Hector.Intl.AP.727530_TMY3.epw,stochastic,10,2,222
+Fargo,46.8772,-96.7898,7A,USA_ND_Fargo-Hector.Intl.AP.727530_TMY3.epw,stochastic,10,2,333
+Phoenix,33.4484,-112.074,2B,USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw,stochastic,10,2,000
+Phoenix,33.4484,-112.074,2B,USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw,stochastic,10,2,111
+Phoenix,33.4484,-112.074,2B,USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw,stochastic,10,2,222
+Phoenix,33.4484,-112.074,2B,USA_AZ_Phoenix-Sky.Harbor.Intl.AP.722780_TMY3.epw,stochastic,10,2,333
