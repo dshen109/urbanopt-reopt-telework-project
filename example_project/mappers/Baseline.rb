@@ -60,6 +60,10 @@ module URBANopt
             # add any paths local to the project
             @@osw[:measure_paths] << File.join(File.dirname(__FILE__), '../measures/')
             @@osw[:measure_paths] << File.join(File.dirname(__FILE__), '../resources/hpxml-measures')
+            @@osw[:measure_paths] << File.join(
+              File.dirname(__FILE__),
+              '../measures/SmartThermostat/measures/'
+            )
             @@osw[:file_paths] << File.join(File.dirname(__FILE__), '../weather/')
 
             # configures OSW with extension gem paths for measures and files, all extension gems must be

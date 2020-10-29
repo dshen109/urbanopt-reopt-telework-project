@@ -120,6 +120,11 @@
         "lighting_power_reduction_percent": 30
       }
     },{
+      "measure_dir_name": "predictive_thermostats",
+      "arguments": {
+        "__SKIP__": true
+      }
+    },{
       "measure_dir_name": "add_central_ice_storage",
       "arguments": {
         "__SKIP__": true,

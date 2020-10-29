@@ -11,12 +11,21 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
 
   # human readable description
   def description
-    return "Predictive thermostats adapt over time to learn when occupants are going to be present or not, and widen the heating and cooling deadband when the space is unoccupied."
+    return \
+      "Predictive thermostats adapt over time to learn when occupants are " \
+      "going to be present or not, and widen the heating and cooling " \
+      "deadband when the space is unoccupied."
   end
 
   # human readable description of modeling approach
   def modeler_description
-    return "For each zone in the model, determine the current heating and cooling setback and setup temperatures.  Compare the thermostat schedule to the occupancy schedule.  Whenever the occupancy level is below the threshold, change the thermostat to the setback/setup temperature.  This modeling approach assumes very good, very granular predictive capabilities."
+    return \
+      "For each zone in the model, determine the current heating and cooling " \
+      "setback and setup temperatures.  Compare the thermostat schedule to " \
+      "the occupancy schedule.  Whenever the occupancy level is below the " \
+      "threshold, change the thermostat to the setback/setup temperature.  " \
+      "This modeling approach assumes very good, very granular predictive " \
+      "capabilities."
   end
 
   # define the arguments that the user will input
@@ -24,19 +33,25 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
     args = OpenStudio::Ruleset::OSArgumentVector.new
 
     # Make integer arg to run measure [1 is run, 0 is no run]
-    run_measure = OpenStudio::Ruleset::OSArgument::makeIntegerArgument("run_measure",true)
+    run_measure = OpenStudio::Ruleset::OSArgument::makeIntegerArgument(
+      "run_measure",true
+    )
     run_measure.setDisplayName("Run Measure")
-    run_measure.setDescription("integer argument to run measure [1 is run, 0 is no run]")
+    run_measure.setDescription(
+      "integer argument to run measure [1 is run, 0 is no run]"
+    )
     run_measure.setDefaultValue(1)
-    args << run_measure 
+    args << run_measure
 
     # Make an argument for reduction percentage
-    occ_threshold = OpenStudio::Ruleset::OSArgument::makeDoubleArgument("occ_threshold",true)
+    occ_threshold = OpenStudio::Ruleset::OSArgument::makeDoubleArgument(
+      "occ_threshold", true
+    )
     occ_threshold.setDisplayName("Occupancy Threshold For Setback")
     occ_threshold.setUnits("%")
     occ_threshold.setDefaultValue(10.0)
-    args << occ_threshold    
-    
+    args << occ_threshold
+
     return args
   end
 
@@ -53,14 +68,11 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
     run_measure = runner.getIntegerArgumentValue("run_measure",user_arguments)
     if run_measure == 0
       runner.registerAsNotApplicable("Run Measure set to #{run_measure}.")
-      return true     
-    end    
-    
+      return true
+    end
 
     occ_threshold = runner.getDoubleArgumentValue("occ_threshold",user_arguments)
     occ_threshold_mult = occ_threshold/100
-    
-  
 
     # Method to find the maximum profile value for a schedule,
     # not including values from the summer and winter design days.
@@ -68,7 +80,7 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
       # Skip non-ruleset schedules
       return false if sch_ruleset.to_ScheduleRuleset.empty?
       sch_ruleset = sch_ruleset.to_ScheduleRuleset.get
-    
+
       # Gather profiles
       profiles = []
       defaultProfile = sch_ruleset.to_ScheduleRuleset.get.defaultDaySchedule
@@ -94,14 +106,15 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
           end
         end
       end
-      
+
       return {"min" => min, "max" => max}
 
-    end    
+    end
 
     # Method to increase the setpoint values
     # in a day schedule by a specified amount
-    def adjust_pred_tstat_day_sch(day_sch, occ_threshold_pct, occ_temp_c , unocc_temp_c)
+    def adjust_pred_tstat_day_sch(day_sch, occ_threshold_pct, occ_temp_c ,
+                                  unocc_temp_c)
       occ_times = day_sch.times
       occ_values = day_sch.values
       day_sch.clearValues
@@ -116,38 +129,44 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
         else
           new_values << unocc_temp_c
           new_times << occ_times[i]
-        end  
+        end
       end
 
       for i in 0..(new_values.length - 1)
         day_sch.addValue(new_times[i], new_values[i])
       end
-    
+
     end
 
     # Method to increase the setpoint values
     # for all day schedules in a ruleset by a specified amount
-    def create_pred_tstat_ruleset_sch(model, occ_sch, occ_threshold_pct, occ_temp_c , unocc_temp_c)
+    def create_pred_tstat_ruleset_sch(model, occ_sch, occ_threshold_pct,
+                                      occ_temp_c , unocc_temp_c)
       # Skip non-ruleset schedules
       return false if occ_sch.to_ScheduleRuleset.empty?
       occ_sch = occ_sch.to_ScheduleRuleset.get
       pred_tstat_sch = occ_sch.clone(model).to_ScheduleRuleset.get
-  
+
       # Default day schedule
-      adjust_pred_tstat_day_sch(pred_tstat_sch.defaultDaySchedule, occ_threshold_pct, occ_temp_c , unocc_temp_c)
-      
+      adjust_pred_tstat_day_sch(
+        pred_tstat_sch.defaultDaySchedule, occ_threshold_pct, occ_temp_c,
+        unocc_temp_c
+      )
+
       # All other day profiles
       pred_tstat_sch.scheduleRules.each do |sch_rule|
-        adjust_pred_tstat_day_sch(sch_rule.daySchedule, occ_threshold_pct, occ_temp_c , unocc_temp_c)
+        adjust_pred_tstat_day_sch(
+          sch_rule.daySchedule, occ_threshold_pct, occ_temp_c , unocc_temp_c
+        )
       end
-      
+
       # Winter design day
       adjust_pred_tstat_day_sch(pred_tstat_sch.winterDesignDaySchedule, occ_threshold_pct, occ_temp_c, occ_temp_c)
-      
+
       # Summer design day
       adjust_pred_tstat_day_sch(pred_tstat_sch.summerDesignDaySchedule, occ_threshold_pct, occ_temp_c, occ_temp_c)
-      
-      
+
+
       # Set the schedule type limits
       type_limits = nil
       if model.getScheduleTypeLimitsByName("Temperature").is_initialized
@@ -161,11 +180,11 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
         type_limits.setUnitType("Temperature")
       end
       pred_tstat_sch.setScheduleTypeLimits(type_limits)
-        
-      return pred_tstat_sch  
-        
-    end    
-    
+
+      return pred_tstat_sch
+
+    end
+
     # Loop through all zones in the model, get their thermostats,
     # and determine the heating and cooling setback and normal values.
     # Then, go through the occupancy schedule for each zone and set the
@@ -173,12 +192,14 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
     # occupancy is less than the threshold.  If the original thermostat
     # has no setback, make the setback 5F and warn the user.
     default_setback_delta_f = 5
-    default_setback_delta_c = OpenStudio.convert(default_setback_delta_f, "R", "K").get.round(1)
+    default_setback_delta_c = OpenStudio.convert(
+      default_setback_delta_f, "R", "K"
+    ).get.round(1)
     zones_changed = []
     occ_sch_to_htg_sch_map = {}
     occ_sch_to_clg_sch_map = {}
     model.getThermalZones.each do |zone|
-      
+
       # Skip zones that have no occupants
       # or have occupants with no schedule
       people = []
@@ -189,7 +210,10 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
         end
       end
       if people.size == 0
-        runner.registerInfo("Zone #{zone.name} has no people, predictive thermostat not applicable.")
+        runner.registerInfo(
+          "Zone #{zone.name} has no people, predictive thermostat not "
+          "applicable."
+        )
         next
       end
       occ = people[0]
@@ -198,15 +222,15 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
         next
       end
       occ_sch = occ.numberofPeopleSchedule.get
-      
+
       # Skip zones with no thermostat or no dual-setpoint thermostat
       next if zone.thermostat.empty?
       if zone.thermostat.get.to_ThermostatSetpointDualSetpoint.empty?
         runner.registerInfo("Zone #{zone.name} has people no thermostat, predictive thermostat not applicable.")
-        next      
+        next
       end
       tstat = zone.thermostat.get.to_ThermostatSetpointDualSetpoint.get
-      
+
       # Skip thermostats that don't have both heating and cooling schedules
       if tstat.heatingSetpointTemperatureSchedule.empty? || tstat.coolingSetpointTemperatureSchedule.empty?
         runner.registerInfo("Zone #{zone.name} is missing either a heating or cooling schedule, predictive thermostat not applicable.")
@@ -223,16 +247,20 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
         htg_unocc = htg_occ - htg_setback
         runner.registerWarning("Zone #{zone.name} had an insignificant/no heating setback of #{htg_setback} delta C.  Setback was changed to #{default_setback_delta_c} delta C because a predictive thermostat doesn't make sense without a setback.")
       end
-      
+
       # Find the cooling setup and setback temps
       clg_occ = get_min_max_val(clg_sch)["min"]
       clg_unocc = get_min_max_val(clg_sch)["max"]
       clg_setback = (clg_unocc - clg_occ).round(1)
       if clg_setback <= 1
         clg_unocc = clg_occ + default_setback_delta_c
-        runner.registerWarning("Zone #{zone.name} had an insignificant/no cooling setback of #{clg_setback} delta C.  Setback was changed to #{default_setback_delta_c} delta C because a predictive thermostat doesn't make sense without a setback.")
+        runner.registerWarning(
+          "Zone #{zone.name} had an insignificant/no cooling setback of " \
+          "#{clg_setback} delta C.  Setback was changed to " \
+          "#{default_setback_delta_c} delta C because a predictive " \
+          "thermostat doesn't make sense without a setback.")
       end
-      
+
       # Create predicitive thermostat schedules that go to
       # setback when occupancy is below the specified threshold
       # (or retrieve one previously created).
@@ -241,7 +269,9 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
       if occ_sch_to_htg_sch_map[occ_sch]
         pred_htg_sch = occ_sch_to_htg_sch_map[occ_sch]
       else
-        pred_htg_sch = create_pred_tstat_ruleset_sch(model, occ_sch, occ_threshold_mult, htg_occ, htg_unocc)
+        pred_htg_sch = create_pred_tstat_ruleset_sch(
+          model, occ_sch, occ_threshold_mult, htg_occ, htg_unocc
+        )
         pred_htg_sch.setName("#{occ_sch.name} Predictive Htg Sch")
         occ_sch_to_htg_sch_map[occ_sch] = pred_htg_sch
       end
@@ -249,34 +279,42 @@ class PredictiveThermostats < OpenStudio::Ruleset::ModelUserScript
       pred_clg_sch = nil
       if occ_sch_to_clg_sch_map[occ_sch]
         pred_clg_sch = occ_sch_to_clg_sch_map[occ_sch]
-      else      
-        pred_clg_sch = create_pred_tstat_ruleset_sch(model, occ_sch, occ_threshold_mult, clg_occ, clg_unocc)
+      else
+        pred_clg_sch = create_pred_tstat_ruleset_sch(
+          model, occ_sch, occ_threshold_mult, clg_occ, clg_unocc
+        )
         pred_clg_sch.setName("#{occ_sch.name} Predictive Clg Sch")
         occ_sch_to_clg_sch_map[occ_sch] = pred_clg_sch
       end
-      
+
       # Assign the predictive thermostat schedules to the zone
       tstat.setHeatingSetpointTemperatureSchedule(pred_htg_sch)
       tstat.setCoolingSetpointTemperatureSchedule(pred_clg_sch)
 
       zones_changed << zone
       runner.registerInfo("Applied a predictive thermostat to #{zone.name}.")
-      
+
     end
-         
+
     # Report if the measure is not applicable
     if zones_changed.size == 0
-      runner.registerAsNotApplicable("This measure is not applicable because none of the zones had both occupants and a thermostat.")
+      runner.registerAsNotApplicable(
+        "This measure is not applicable because none of the zones had both " \
+        "occupants and a thermostat."
+      )
       return true
-    end  
-        
+    end
+
     # Report final condition
-    runner.registerFinalCondition("Added predictive thermostats to #{zones_changed.size} zones in the building by setting the thermostat to a setback temperature if occupancy level was below #{occ_threshold}%.")
+    runner.registerFinalCondition(
+      "Added predictive thermostats to #{zones_changed.size} zones in the " \
+      "building by setting the thermostat to a setback temperature if " \
+      "occupancy level was below #{occ_threshold}%.")
 
     return true
 
   end
-  
+
 end
 
 # register the measure to be used by the application
