@@ -21,11 +21,11 @@ class ProcessCoolingSetpoints < OpenStudio::Measure::ModelMeasure
   end
 
   def description
-    return "This measure creates the cooling season schedules and the cooling setpoint schedules.#{Constants.WorkflowDescription} "
+    return "This measure creates the cooling season schedules and the cooling setpoint schedules.#{WholeBuildingConstants.WorkflowDescription} "
   end
 
   def modeler_description
-    return "This measure creates #{Constants.ObjectNameCoolingSeason} ruleset objects. Schedule values are either user-defined or populated based on information contained in the EPW file. This measure also creates #{Constants.ObjectNameCoolingSetpoint} ruleset objects. Schedule values are populated based on information input by the user as well as contained in the #{Constants.ObjectNameCoolingSeason}. The cooling setpoint schedules are added to the living zone's thermostat. The cooling setpoint schedule is constructed by taking the base setpoint (or 24-hour comma-separated cooling schedule) and applying an optional offset, as specified by the offset magnitude and offset schedule. If specified as a 24-hour schedule, the base setpoint can incorporate setpoint schedule changes, but having a separately specified offset magnitude and schedule is convenient for parametric runs."
+    return "This measure creates #{WholeBuildingConstants.ObjectNameCoolingSeason} ruleset objects. Schedule values are either user-defined or populated based on information contained in the EPW file. This measure also creates #{WholeBuildingConstants.ObjectNameCoolingSetpoint} ruleset objects. Schedule values are populated based on information input by the user as well as contained in the #{WholeBuildingConstants.ObjectNameCoolingSeason}. The cooling setpoint schedules are added to the living zone's thermostat. The cooling setpoint schedule is constructed by taking the base setpoint (or 24-hour comma-separated cooling schedule) and applying an optional offset, as specified by the offset magnitude and offset schedule. If specified as a 24-hour schedule, the base setpoint can incorporate setpoint schedule changes, but having a separately specified offset magnitude and schedule is convenient for parametric runs."
   end
 
   # define the arguments that the user will input
@@ -37,7 +37,7 @@ class ProcessCoolingSetpoints < OpenStudio::Measure::ModelMeasure
     weekday_setpoint.setDisplayName("Weekday Setpoint")
     weekday_setpoint.setDescription("Specify a single cooling setpoint or a 24-hour comma-separated cooling schedule for the weekdays.")
     weekday_setpoint.setUnits("degrees F")
-    weekday_setpoint.setDefaultValue("#{Constants.DefaultCoolingSetpoint}")
+    weekday_setpoint.setDefaultValue("#{WholeBuildingConstants.DefaultCoolingSetpoint}")
     args << weekday_setpoint
 
     # Make a string argument for 24 weekend cooling set point values
@@ -45,7 +45,7 @@ class ProcessCoolingSetpoints < OpenStudio::Measure::ModelMeasure
     weekend_setpoint.setDisplayName("Weekend Setpoint")
     weekend_setpoint.setDescription("Specify a single cooling setpoint or a 24-hour comma-separated cooling schedule for the weekend.")
     weekend_setpoint.setUnits("degrees F")
-    weekend_setpoint.setDefaultValue("#{Constants.DefaultCoolingSetpoint}")
+    weekend_setpoint.setDefaultValue("#{WholeBuildingConstants.DefaultCoolingSetpoint}")
     args << weekend_setpoint
 
     # Make a string argument for 24 weekday cooling set point offset magnitude

@@ -21,17 +21,17 @@ class ProcessHeatingSetpoints < OpenStudio::Measure::ModelMeasure
   end
 
   def description
-    return "This measure creates the heating season schedules and the heating setpoint schedules.#{Constants.WorkflowDescription}"
+    return "This measure creates the heating season schedules and the heating setpoint schedules.#{WholeBuildingConstants.WorkflowDescription}"
   end
 
   def modeler_description
     return \
-      "This measure creates #{Constants.ObjectNameHeatingSeason} ruleset " \
+      "This measure creates #{WholeBuildingConstants.ObjectNameHeatingSeason} ruleset " \
       "objects. Schedule values are either user-defined or populated based " \
       "on information contained in the EPW file. This measure also creates " \
-      "#{Constants.ObjectNameHeatingSetpoint} ruleset objects. Schedule " \
+      "#{WholeBuildingConstants.ObjectNameHeatingSetpoint} ruleset objects. Schedule " \
       "values are populated based on information input by the user as well " \
-      "as contained in the #{Constants.ObjectNameHeatingSeason}. The heating " \
+      "as contained in the #{WholeBuildingConstants.ObjectNameHeatingSeason}. The heating " \
       "setpoint schedules are added to the living zone's thermostat. " \
       "The heating setpoint schedules are added to the living zone's " \
       "thermostat. The heating setpoint schedule is constructed by taking " \
@@ -57,7 +57,7 @@ class ProcessHeatingSetpoints < OpenStudio::Measure::ModelMeasure
       "heating schedule for the weekdays."
     )
     weekday_setpoint.setUnits("degrees F")
-    weekday_setpoint.setDefaultValue("#{Constants.DefaultHeatingSetpoint}")
+    weekday_setpoint.setDefaultValue("#{WholeBuildingConstants.DefaultHeatingSetpoint}")
     args << weekday_setpoint
 
     # Make a string argument for 24 weekend heating set point values
@@ -70,7 +70,7 @@ class ProcessHeatingSetpoints < OpenStudio::Measure::ModelMeasure
       "heating schedule for the weekend."
     )
     weekend_setpoint.setUnits("degrees F")
-    weekend_setpoint.setDefaultValue("#{Constants.DefaultHeatingSetpoint}")
+    weekend_setpoint.setDefaultValue("#{WholeBuildingConstants.DefaultHeatingSetpoint}")
     args << weekend_setpoint
 
     # Make a string argument for 24 weekday heating set point offset magnitude
