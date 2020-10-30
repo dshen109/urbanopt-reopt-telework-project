@@ -102,32 +102,15 @@
         "airVelocitySchedule":"Air Velocity Schedule"
       }
     },{
-      "measure_dir_name": "ResidentialHVACCoolingSetpoints",
+      "measure_dir_name": "predictive_thermostats",
       "arguments": {
         "__SKIP__": true,
-        "weekday_setpoint": 76,
-        "weekend_setpoint": 76,
-        "weekday_offset_magnitude": 0,
-        "weekend_offset_magnitude": 0,
-        "weekday_offset_schedule":
-          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-        "weekend_offset_schedule":
-          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-        "use_auto_season": false
-      }
-    },{
-      "measure_dir_name": "ResidentialHVACHeatingSetpoints",
-      "arguments": {
-        "__SKIP__": true,
-        "weekday_setpoint": 71,
-        "weekend_setpoint": 71,
-        "weekday_offset_magnitude": 0,
-        "weekend_offset_magnitude": 0,
-        "weekday_offset_schedule":
-          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-        "weekend_offset_schedule":
-          "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
-        "use_auto_season": false
+        "heating_setpoint": 71,
+        "cooling_setpoint": 76,
+        "zone_names": "living space",
+        "thermostat_offset": 5,
+        "occupancy_threshold": 10,
+        "occupancy_schedule": "occupants"
       }
     },{
       "measure_dir_name": "add_central_ice_storage",
