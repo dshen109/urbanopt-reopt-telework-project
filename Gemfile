@@ -2,7 +2,7 @@ source 'http://rubygems.org'
 
 ruby '~> 2.5.0'
 
-gem 'openstudio-model-articulation', '~> 0.2.0'
+gem 'openstudio-model-articulation', '0.2.0'
 
 gem 'urbanopt-geojson', '~> 0.4.0'
 gem 'urbanopt-scenario', '~> 0.4.2'
