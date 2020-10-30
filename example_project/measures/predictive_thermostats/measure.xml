@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<measure>
+  <schema_version>3.0</schema_version>
+  <name>occupancy_based_thermostat</name>
+  <uid>259dc35f-65e8-47d4-913f-69efede5a267</uid>
+  <version_id>68246d2a-4af7-465a-9038-57aaf7cc0ec0</version_id>
+  <version_modified>20201030T090638Z</version_modified>
+  <xml_checksum>C9CF0714</xml_checksum>
+  <class_name>OccupancyBasedThermostat</class_name>
+  <display_name>Occupancy-Based Thermostats</display_name>
+  <description>Adjust thermostats based on a master occupancy schedule file.</description>
+  <modeler_description>For each zone in the model that matches the specified zones and has a thermostat with both heating and cooling schedules, apply a symmetric offset to the heating and cooling setpoints based on a occupancy schedule file and occupant threshhold below which the offset will be applied. Overwrites all applicable thermostat schedules with schedule files.</modeler_description>
+  <arguments>
+    <argument>
+      <name>occupancy_schedule</name>
+      <display_name>Occupancy Schedule Name</display_name>
+      <description>Name of schedule to pull occupancies from.</description>
+      <type>String</type>
+      <units>#</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>occupants</default_value>
+    </argument>
+    <argument>
+      <name>occupancy_threshold</name>
+      <display_name>Occupancy Threshold For Setback</display_name>
+      <description>Occupancy threshold below which to apply offset. Should be in [0, 100].</description>
+      <type>Double</type>
+      <units>%</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>10</default_value>
+    </argument>
+    <argument>
+      <name>heating_setpoint</name>
+      <display_name>Heating Setpoint</display_name>
+      <description>TODO</description>
+      <type>Double</type>
+      <units>degrees F</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>71</default_value>
+    </argument>
+    <argument>
+      <name>cooling_setpoint</name>
+      <display_name>Cooling Setpoint</display_name>
+      <description>TODO</description>
+      <type>Double</type>
+      <units>degrees F</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>76</default_value>
+    </argument>
+    <argument>
+      <name>thermostat_offset</name>
+      <display_name>Thermostat Offset</display_name>
+      <description>Temperature offset to apply to both the heating and cooling setpoints.</description>
+      <type>Double</type>
+      <units>R</units>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+      <default_value>5</default_value>
+    </argument>
+    <argument>
+      <name>zone_names</name>
+      <display_name>Zone Names</display_name>
+      <description>Comma-separated string of thermal zone names to apply the offsets to.</description>
+      <type>String</type>
+      <required>true</required>
+      <model_dependent>false</model_dependent>
+    </argument>
+  </arguments>
+  <outputs />
+  <provenances />
+  <tags>
+    <tag>Thermostats.Space Types</tag>
+  </tags>
+  <attributes>
+    <attribute>
+      <name>Measure Type</name>
+      <value>ModelMeasure</value>
+      <datatype>string</datatype>
+    </attribute>
+  </attributes>
+  <files>
+    <file>
+      <filename>small_office_1980-2004.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>2B663484</checksum>
+    </file>
+    <file>
+      <filename>predictive_thermostats_test.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>test</usage_type>
+      <checksum>18AED7FF</checksum>
+    </file>
+    <file>
+      <filename>secondary_school_90.1-2010.osm</filename>
+      <filetype>osm</filetype>
+      <usage_type>test</usage_type>
+      <checksum>DB233375</checksum>
+    </file>
+    <file>
+      <version>
+        <software_program>OpenStudio</software_program>
+        <identifier>2.9.1</identifier>
+        <min_compatible>2.9.1</min_compatible>
+      </version>
+      <filename>measure.rb</filename>
+      <filetype>rb</filetype>
+      <usage_type>script</usage_type>
+      <checksum>B8962085</checksum>
+    </file>
+  </files>
+</measure>
