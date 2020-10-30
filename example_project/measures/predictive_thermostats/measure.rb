@@ -29,7 +29,7 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     args = OpenStudio::Measure::OSArgumentVector.new
 
     arg = OpenStudio::Measure::OSArgument::makeStringArgument(
-      "occupancy_schedule"
+      "occupancy_schedule", false
     )
     arg.setDisplayName("Occupancy Schedule Name")
     arg.setDescription("Name of schedule to pull occupancies from.")
@@ -38,7 +38,7 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     args << arg
 
     arg = OpenStudio::Measure::OSArgument::makeDoubleArgument(
-      "occupancy_threshold"
+      "occupancy_threshold", false
     )
     arg.setDisplayName("Occupancy Threshold For Setback")
     arg.setDescription(
@@ -48,14 +48,18 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     arg.setDefaultValue(10.0)
     args << arg
 
-    arg = OpenStudio::Measure::OSArgument::makeDoubleArgument("heating_setpoint")
+    arg = OpenStudio::Measure::OSArgument::makeDoubleArgument(
+      "heating_setpoint", false
+    )
     arg.setDisplayName("Heating Setpoint")
     arg.setDescription("TODO")
     arg.setUnits("degrees F")
     arg.setDefaultValue(71.0)
     args << arg
 
-    arg = OpenStudio::Measure::OSArgument::makeDoubleArgument("cooling_setpoint")
+    arg = OpenStudio::Measure::OSArgument::makeDoubleArgument(
+      "cooling_setpoint", false
+    )
     arg.setDisplayName("Cooling Setpoint")
     arg.setDescription("TODO")
     arg.setUnits("degrees F")
@@ -63,7 +67,7 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     args << arg
 
     arg = OpenStudio::Measure::OSArgument::makeDoubleArgument(
-      "thermostat_offset"
+      "thermostat_offset", false
     )
     arg.setDisplayName("Thermostat Offset")
     arg.setDescription(
@@ -73,7 +77,9 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     arg.setDefaultValue(5)
     args << arg
 
-    arg = OpenStudio::Measure::OSArgument::makeStringArgument("zone_names")
+    arg = OpenStudio::Measure::OSArgument::makeStringArgument(
+      "zone_names", true
+    )
     arg.setDisplayName("Zone Names")
     arg.setDescription(
       "Comma-separated string of thermal zone names to apply the offsets to."
@@ -144,7 +150,7 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
       )
 
       thermostat.setHeatingSetpointTemperatureSchedule(new_heating)
-      thermostat.setHeatingSetpointTemperatureSchedule(new_cooling)
+      thermostat.setCoolingSetpointTemperatureSchedule(new_cooling)
       zones_changed << zone
 
       runner.registerInfo("Adjusted thermostat for #{zone_name}")
@@ -200,7 +206,33 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     cooling_schedule = OpenStudio::Model::ScheduleFile.new(
       external_file, 2, 0
     )
+    heating_schedule.setName('heating schedule occupancy based')
+    cooling_schedule.setName('cooling schedule occupancy based')
     return heating_schedule, cooling_schedule
+    # if occupant_schedule.minutesperItem.get.to_i == 60
+    #   interval = OpenStudio::Time.new(0, 1, 0)
+    # else
+    #   interval = OpenStudio::Time.new(
+    #     0, 0, occupant_schedule.minutesperItem.get.to_i
+    #   )
+    # end
+    # start_date = OpenStudio::Date.new(OpenStudio::MonthOfYear.new(1), 1)
+    # heating_timeseries = OpenStudio::TimeSeries.new(
+    #   start_date, interval, heatings, "C"
+    # )
+    # cooling_timeseries = OpenStudio::TimeSeries.new(
+    #   start_date, interval, coolings, "C"
+    # )
+    # heating_schedule = OpenStudio::Model::ScheduleInterval::fromTimeSeries(
+    #   heating_timeseries, model
+    # )
+    # cooling_schedule = OpenStudio::Model::ScheduleInterval::fromTimeSeries(
+    #   cooling_timeseries, model
+    # )
+    # heating_schedule.get.setName("heating schedule")
+    # cooling_schedule.get.setName("cooling schedule")
+
+    # return heating_schedule, cooling_schedule
   end
 
   # Given an OpenStudio schedule file, return an OpenStudio vector of the vals.
@@ -210,9 +242,8 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     column = schedule.columnNumber - 1
     rows_to_skip = schedule.rowstoSkipatTop
 
-    num_values = (
+    num_values = \
       schedule.numberofHoursofData.get * 60 / schedule.minutesperItem.get.to_i
-    ).to_i
     occupancy = OpenStudio::Vector.new(num_values)
 
     raw_data.each_with_index do |row, i|
