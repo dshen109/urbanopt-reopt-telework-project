@@ -46,7 +46,6 @@ module URBANopt
       @@geometry = nil
 
       def initialize()
-
         # do initialization of class variables in thread safe way
         @@instance_lock.synchronize do
           if @@osw.nil?
@@ -385,6 +384,72 @@ module URBANopt
         end
       end
 
+      # Handle setting residential HVAC setbacks, if specified in config.
+      def set_residential_hvac_setbacks(osw, feature)
+        begin
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_setpoint',
+            feature.hvac_cooling_setpoint
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_offset_magnitude',
+            feature.hvac_offset_magnitude
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_offset_schedule',
+            feature.hvac_offset_schedule_weekday
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_setpoint',
+            feature.hvac_cooling_setpoint
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_offset_magnitude',
+            feature.hvac_offset_magnitude
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_offset_schedule',
+            feature.hvac_offset_schedule_weekend
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACCoolingSetpoints', '__SKIP__', false
+          )
+        rescue NoMethodError
+        end
+
+        begin
+          # Negative offset because heating
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_setpoint',
+            feature.hvac_heating_setpoint
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_offset_magnitude',
+            - feature.hvac_offset_magnitude
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_offset_schedule',
+            feature.hvac_offset_schedule_weekday
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_setpoint',
+            feature.hvac_heating_setpoint
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_offset_magnitude',
+            - feature.hvac_offset_magnitude
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_offset_schedule',
+            feature.hvac_offset_schedule_weekend
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'ResidentialHVACHeatingSetpoints', '__SKIP__', false
+          )
+        rescue NoMethodError
+        end
+      end
+
       def create_osw(scenario, features, feature_names)
 
         if features.size != 1
@@ -548,6 +613,10 @@ module URBANopt
             if args[:heating_system_type] == "ElectricResistance"
               args[:heating_system_fuel] = "electricity"
             end
+
+            # Handle scheduled HVAC setbacks, apply offsets and scehdules
+            # symmetrically to heating / cooling
+            set_residential_hvac_setbacks(osw, feature)
 
             # APPLICANCES
             args[:cooking_range_oven_fuel_type] = args[:heating_system_fuel]
@@ -871,7 +940,10 @@ module URBANopt
                   climate_zone = feature.climate_zone
                   if !climate_zone.empty?
                     climate_zone = "ASHRAE 169-2013-" + climate_zone
-                    OpenStudio::Extension.set_measure_argument(osw, 'ChangeBuildingLocation', 'climate_zone', climate_zone)
+                    OpenStudio::Extension.set_measure_argument(
+                      osw, 'ChangeBuildingLocation', 'climate_zone',
+                      climate_zone
+                    )
                  end
                 rescue
                 end
