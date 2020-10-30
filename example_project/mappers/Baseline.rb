@@ -386,10 +386,13 @@ module URBANopt
 
       # Handle setting residential HVAC setbacks, if specified in config.
       def set_residential_hvac_setbacks(osw, feature)
+        # Convert setpoints to strings because the measure expects a string to
+        # be cross-compatible with string schedules.
         begin
+          cooling_setpoint = feature.hvac_cooling_setpoint.to_s
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACCoolingSetpoints', 'weekday_setpoint',
-            feature.hvac_cooling_setpoint
+            cooling_setpoint
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACCoolingSetpoints', 'weekday_offset_magnitude',
@@ -401,7 +404,7 @@ module URBANopt
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACCoolingSetpoints', 'weekend_setpoint',
-            feature.hvac_cooling_setpoint
+            cooling_setpoint
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACCoolingSetpoints', 'weekend_offset_magnitude',
@@ -418,10 +421,11 @@ module URBANopt
         end
 
         begin
+          heating_setpoint = feature.hvac_cooling_setpoint.to_s
           # Negative offset because heating
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACHeatingSetpoints', 'weekday_setpoint',
-            feature.hvac_heating_setpoint
+            heating_setpoint
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACHeatingSetpoints', 'weekday_offset_magnitude',
@@ -433,7 +437,7 @@ module URBANopt
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACHeatingSetpoints', 'weekend_setpoint',
-            feature.hvac_heating_setpoint
+            heating_setpoint
           )
           OpenStudio::Extension.set_measure_argument(
             osw, 'ResidentialHVACHeatingSetpoints', 'weekend_offset_magnitude',
