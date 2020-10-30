@@ -59,10 +59,6 @@ module URBANopt
             # add any paths local to the project
             @@osw[:measure_paths] << File.join(File.dirname(__FILE__), '../measures/')
             @@osw[:measure_paths] << File.join(File.dirname(__FILE__), '../resources/hpxml-measures')
-            @@osw[:measure_paths] << File.join(
-              File.dirname(__FILE__),
-              '../measures/SmartThermostat/measures/'
-            )
             @@osw[:file_paths] << File.join(File.dirname(__FILE__), '../weather/')
 
             # configures OSW with extension gem paths for measures and files, all extension gems must be
@@ -384,76 +380,6 @@ module URBANopt
         end
       end
 
-      # Handle setting residential HVAC setbacks, if specified in config.
-      def set_residential_hvac_setbacks(osw, feature)
-        # Convert setpoints to strings because the measure expects a string to
-        # be cross-compatible with string schedules.
-        begin
-          cooling_setpoint = feature.hvac_cooling_setpoint.to_s
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_setpoint',
-            cooling_setpoint
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_offset_magnitude',
-            feature.hvac_offset_magnitude
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekday_offset_schedule',
-            feature.hvac_offset_schedule_weekday
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_setpoint',
-            cooling_setpoint
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_offset_magnitude',
-            feature.hvac_offset_magnitude
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', 'weekend_offset_schedule',
-            feature.hvac_offset_schedule_weekend
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACCoolingSetpoints', '__SKIP__', false
-          )
-        rescue NoMethodError
-        end
-
-        begin
-          heating_setpoint = feature.hvac_cooling_setpoint.to_s
-          # Negative offset because heating
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_setpoint',
-            heating_setpoint
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_offset_magnitude',
-            - feature.hvac_offset_magnitude
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekday_offset_schedule',
-            feature.hvac_offset_schedule_weekday
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_setpoint',
-            heating_setpoint
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_offset_magnitude',
-            - feature.hvac_offset_magnitude
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', 'weekend_offset_schedule',
-            feature.hvac_offset_schedule_weekend
-          )
-          OpenStudio::Extension.set_measure_argument(
-            osw, 'ResidentialHVACHeatingSetpoints', '__SKIP__', false
-          )
-        rescue NoMethodError
-        end
-      end
-
       def create_osw(scenario, features, feature_names)
 
         if features.size != 1
@@ -620,7 +546,29 @@ module URBANopt
 
             # Handle scheduled HVAC setbacks, apply offsets and scehdules
             # symmetrically to heating / cooling
-            set_residential_hvac_setbacks(osw, feature)
+            begin
+              hvac_setback_zones = feature.hvac_setback_zone_names
+              OpenStudio::Extension.set_measure_argument(
+                osw, 'predictive_thermostats', '__SKIP__', false
+              )
+              OpenStudio::Extension.set_measure_argument(
+                osw, 'predictive_thermostats', 'zone_names',
+                hvac_setback_zones
+              )
+              OpenStudio::Extension.set_measure_argument(
+                osw, 'predictive_thermostats', 'heating_setpoint',
+                71
+              )
+              OpenStudio::Extension.set_measure_argument(
+                osw, 'predictive_thermostats', 'cooling_setpoint',
+                76
+              )
+              OpenStudio::Extension.set_measure_argument(
+                osw, 'predictive_thermostats', 'thermostat_offset',
+                5
+              )
+            rescue NoMethodError
+            end
 
             # APPLICANCES
             args[:cooking_range_oven_fuel_type] = args[:heating_system_fuel]
