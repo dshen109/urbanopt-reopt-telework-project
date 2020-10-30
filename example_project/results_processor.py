@@ -326,7 +326,10 @@ class Results:
         }
         for scenario in self.get_matching_scenarios(params):
             # Check if it matches
-            scenario_params = self.load_scenario(scenario)
+            try:
+                scenario_params = self.load_scenario(scenario)
+            except Exception:
+                continue
             # Load up the electricity file.
             report_csv = os.path.join(
                 self.run_dir, scenario, str(building_num),
@@ -409,7 +412,10 @@ class Results:
         for scenario in os.listdir(self.run_dir):
             match = True
             if params:
-                scenario_params = self.load_scenario(scenario)
+                try:
+                    scenario_params = self.load_scenario(scenario)
+                except Exception:
+                    pass
                 for k, v in params.items():
                     if k == "building_num":
                         continue
