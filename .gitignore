@@ -1,3 +1,4 @@
+.ruby-version
 *.lock
 *.conf
 /example_project/run/*
