@@ -1,0 +1,30 @@
+# Thermostat parameters for clsuterings
+cluster:
+  # Mostly home
+  '000':
+    hvac_offset_schedule_weekday:
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    hvac_offset_schedule_weekend:
+      0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0
+  # Early regular worker
+  '111':
+    hvac_offset_schedule_weekday:
+      0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0
+    hvac_offset_schedule_weekend:
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+  # mostly away
+  '222':
+    hvac_offset_schedule_weekday:
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0
+    hvac_offset_schedule_weekend:
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0
+  # regular worker
+  '333':
+    hvac_offset_schedule_weekday:
+      0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0
+    hvac_offset_schedule_weekend:
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+hvac_cooling_setpoint: 76
+hvac_heating_setpoint: 71
+hvac_offset_magnitude: 5
+
