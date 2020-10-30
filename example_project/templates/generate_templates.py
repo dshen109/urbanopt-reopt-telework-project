@@ -12,12 +12,14 @@ import pprint
 
 import pandas as pd
 from timezonefinder import TimezoneFinder
+import yaml
 
 timezone_finder = TimezoneFinder()
 
 SITES_FILE = "sites.csv"
 TARIFFS = "tariffs.csv"
 STORAGE = "storage.csv"
+HVAC_CLUSTERS = yaml.load('cluster_thermostat_schedules.yml')
 
 # Directory to throw all the JSONs into.
 TEMPLATE_DIRECTORY = 'outputs'
@@ -135,11 +137,23 @@ if __name__ == "__main__":
             'num_simulations': num_simulations,
             'timesteps_per_hour': timesteps_per_hour,
             'timezone': timezone_finder.timezone_at(
-                lat=latitude, lng=longitude)
+                lat=latitude, lng=longitude
+            )
         }
 
         if occupant_types:
             template['occupant_types'] = occupant_types
+        if occupant_types and row.get('hvac_setback'):
+            template['hvac_cooling_setpoint'] = \
+                HVAC_CLUSTERS['hvac_cooling_setpoint']
+            template['hvac_heating_setpoint'] = \
+                HVAC_CLUSTERS['hvac_heating_setpoint']
+            template['hvac_offset_magnitude'] = \
+                HVAC_CLUSTERS['hvac_offset_magnitude']
+            template['hvac_offset_schedule_weekday'] = \
+                HVAC_CLUSTERS['cluster'][occupant_types]['hvac_offset_schedule_weekday']
+            template['hvac_offset_schedule_weekend'] = \
+                HVAC_CLUSTERS['cluster'][occupant_types]['hvac_offset_schedule_weekend']
 
         # UUID tags the run based on the dictionary contents so don't overwrite
         uuid = getID(flatten_dict(template))
