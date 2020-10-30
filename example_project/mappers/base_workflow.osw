@@ -117,7 +117,7 @@
       }
     },{
       "measure_dir_name": "ResidentialHVACHeatingSetpoints",
-      "arguments: {
+      "arguments": {
         "__SKIP__": true,
         "weekday_setpoint": 71,
         "weekend_setpoint": 71,
