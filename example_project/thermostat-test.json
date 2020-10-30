@@ -1,0 +1,129 @@
+{
+  "type": "FeatureCollection",
+  "project": {
+    "id": "some-id-i-guess",
+    "name": "Aspen",
+    "surface_elevation": null,
+    "import_surrounding_buildings_as_shading": null,
+    "weather_filename": "USA_CO_Aspen-Pitkin.County-Sardy.Field.724676_TMY3.epw",
+    "tariff_filename": null,
+    "climate_zone": "7B",
+    "cec_climate_zone": null,
+    "begin_date": "2007-01-01T00:00:00.000",
+    "end_date": "2007-12-31T23:59:00.000",
+    "timesteps_per_hour": 1,
+    "default_template": "90.1-2013"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "correcthorsebattery",
+        "name": "Site Origin",
+        "type": "Site Origin"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          39.1911,
+          -106.8175
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "1",
+        "name": "Residential 1",
+        "type": "Building",
+        "building_type": "Single-Family Detached",
+        "floor_area": 2301,
+        "footprint_area": 2301,
+        "number_of_stories_above_ground": 1,
+        "number_of_stories": 1,
+        "number_of_bedrooms": 3,
+        "foundation_type": "slab",
+        "attic_type": "attic - vented",
+        "system_type": "Residential - electric resistance and central air conditioner",
+        "template": "Residential IECC 2015 - Customizable Template Sep 2020",
+        "schedules_type": "stochastic",
+        "schedules_occupant_types": "333"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              39.1911,
+              -106.8175
+            ],
+            [
+              39.1911,
+              -106.817
+            ],
+            [
+              39.1916,
+              -106.817
+            ],
+            [
+              39.1916,
+              -106.8175
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "2",
+        "name": "Residential 2",
+        "type": "Building",
+        "building_type": "Single-Family Detached",
+        "floor_area": 2301,
+        "footprint_area": 2301,
+        "number_of_stories_above_ground": 1,
+        "number_of_stories": 1,
+        "number_of_bedrooms": 3,
+        "foundation_type": "slab",
+        "attic_type": "attic - vented",
+        "system_type": "Residential - electric resistance and central air conditioner",
+        "template": "Residential IECC 2015 - Customizable Template Sep 2020",
+        "schedules_type": "stochastic",
+        "schedules_occupant_types": "333",
+        "hvac_setback_zone_names": "living space"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              39.1911,
+              -106.8175
+            ],
+            [
+              39.1911,
+              -106.817
+            ],
+            [
+              39.1916,
+              -106.817
+            ],
+            [
+              39.1916,
+              -106.8175
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "mappers": [],
+  "scenarios": [
+    {
+      "feature_mappings": [],
+      "id": "another-dummy-id",
+      "name": "New Scenario"
+    }
+  ]
+}
