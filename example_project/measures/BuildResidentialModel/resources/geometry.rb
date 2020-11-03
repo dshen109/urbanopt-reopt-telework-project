@@ -442,9 +442,6 @@ class WholeBuildingGeometry
   end
 
   def self.is_living_space_type(space_type)
-    # Try slicing 'space' off the end because of the different naming standard
-    # from the HPXML convention
-    space_type.slice! " space"
     if [WholeBuildingConstants.SpaceTypeLiving, WholeBuildingConstants.SpaceTypeFinishedBasement, WholeBuildingConstants.SpaceTypeKitchen,
         WholeBuildingConstants.SpaceTypeBedroom, WholeBuildingConstants.SpaceTypeBathroom, WholeBuildingConstants.SpaceTypeLaundryRoom].include? space_type
       return true
