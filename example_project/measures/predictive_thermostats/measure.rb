@@ -91,6 +91,8 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
 
   # define what happens when the measure is run.
   def run(model, runner, user_arguments)
+    super(model, runner, user_arguments)
+
     if !runner.validateUserArguments(arguments(model), user_arguments)
       return false
     end
@@ -129,7 +131,7 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
         next
       end
 
-      # TODO: Add some logging here
+      # TODO: Add some logging here to indicate we're skipping
       next if zone.thermostat.empty?
       next if zone.thermostat.get.to_ThermostatSetpointDualSetpoint.empty?
 
@@ -158,7 +160,9 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
 
     if zones_changed.size == 0
       runner.registerAsNotApplicable("No zone thermostats were modified.")
+      return true
     end
+
     runner.registerFinalCondition(
       "#{zones_changed.size} zones were adjusted."
     )
@@ -204,35 +208,11 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
       external_file, 1, 1
     )
     cooling_schedule = OpenStudio::Model::ScheduleFile.new(
-      external_file, 2, 0
+      external_file, 2, 1
     )
     heating_schedule.setName('heating schedule occupancy based')
     cooling_schedule.setName('cooling schedule occupancy based')
     return heating_schedule, cooling_schedule
-    # if occupant_schedule.minutesperItem.get.to_i == 60
-    #   interval = OpenStudio::Time.new(0, 1, 0)
-    # else
-    #   interval = OpenStudio::Time.new(
-    #     0, 0, occupant_schedule.minutesperItem.get.to_i
-    #   )
-    # end
-    # start_date = OpenStudio::Date.new(OpenStudio::MonthOfYear.new(1), 1)
-    # heating_timeseries = OpenStudio::TimeSeries.new(
-    #   start_date, interval, heatings, "C"
-    # )
-    # cooling_timeseries = OpenStudio::TimeSeries.new(
-    #   start_date, interval, coolings, "C"
-    # )
-    # heating_schedule = OpenStudio::Model::ScheduleInterval::fromTimeSeries(
-    #   heating_timeseries, model
-    # )
-    # cooling_schedule = OpenStudio::Model::ScheduleInterval::fromTimeSeries(
-    #   cooling_timeseries, model
-    # )
-    # heating_schedule.get.setName("heating schedule")
-    # cooling_schedule.get.setName("cooling schedule")
-
-    # return heating_schedule, cooling_schedule
   end
 
   # Given an OpenStudio schedule file, return an OpenStudio vector of the vals.
