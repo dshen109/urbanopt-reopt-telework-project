@@ -175,7 +175,6 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     cooling_temp, offset
   )
     if occupant_schedule.to_ScheduleFile.empty?
-      puts "errore!!!"
       return false
     end
     occupant_schedule = occupant_schedule.to_ScheduleFile.get
@@ -185,8 +184,8 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
     coolings = OpenStudio::Vector.new(occupancies.length)
     occupancies.each_with_index do |occupancy, i|
       if occupancy <= occupancy_threshold
-        heatings[i] = heating_temp - offset
-        coolings[i] = cooling_temp + offset
+        heatings[i] = (heating_temp - offset).round(2)
+        coolings[i] = (cooling_temp + offset).round(2)
       else
         heatings[i] = heating_temp
         coolings[i] = cooling_temp
@@ -195,9 +194,9 @@ class OccupancyBasedThermostat < OpenStudio::Measure::ModelMeasure
 
     # Write out the vectors to a new CSV
     schedule_path = "../thermostat_schedules.csv"
-    CSV.open(schedule_path, 'w') do |csv|
+    CSV.open(schedule_path, 'w+') do |csv|
       csv << ["heating_setpoint", "cooling_setpoint"]
-      (0..heatings.length).each do |i|
+      (0...heatings.length).each do |i|
         csv << [heatings[i], coolings[i]]
       end
     end
