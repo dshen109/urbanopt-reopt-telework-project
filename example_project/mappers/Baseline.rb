@@ -380,6 +380,36 @@ module URBANopt
         end
       end
 
+      def set_predictive_thermostats(feature, osw)
+        unless get_feature_attr(feature, 'hvac_setback_zone_names').nil?
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'predictive_thermostats', 'zone_names',
+            feature.hvac_setback_zone_names
+          )
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'predictive_thermostats', '__SKIP__', false
+          )
+        end
+        unless get_feature_attr(feature, 'hvac_heating_setpoint').nil?
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'predictive_thermostats', 'heating_setpoint',
+            feature.hvac_heating_setpoint
+          )
+        end
+        unless get_feature_attr(feature, 'hvac_cooling_setpoint').nil?
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'predictive_thermostats', 'cooling_setpoint',
+            feature.hvac_cooling_setpoint
+          )
+        end
+        unless get_feature_attr(feature, 'hvac_thermostat_offset').nil?
+          OpenStudio::Extension.set_measure_argument(
+            osw, 'predictive_thermostats', 'thermostat_offset',
+            feature.hvac_thermostat_offset
+          )
+        end
+      end
+
       def create_osw(scenario, features, feature_names)
 
         if features.size != 1
@@ -546,29 +576,7 @@ module URBANopt
 
             # Handle scheduled HVAC setbacks, apply offsets and scehdules
             # symmetrically to heating / cooling
-            begin
-              hvac_setback_zones = feature.hvac_setback_zone_names
-              OpenStudio::Extension.set_measure_argument(
-                osw, 'predictive_thermostats', '__SKIP__', false
-              )
-              OpenStudio::Extension.set_measure_argument(
-                osw, 'predictive_thermostats', 'zone_names',
-                hvac_setback_zones
-              )
-              OpenStudio::Extension.set_measure_argument(
-                osw, 'predictive_thermostats', 'heating_setpoint',
-                71
-              )
-              OpenStudio::Extension.set_measure_argument(
-                osw, 'predictive_thermostats', 'cooling_setpoint',
-                76
-              )
-              OpenStudio::Extension.set_measure_argument(
-                osw, 'predictive_thermostats', 'thermostat_offset',
-                5
-              )
-            rescue NoMethodError
-            end
+            set_predictive_thermostats(feature, osw)
 
             # APPLICANCES
             args[:cooking_range_oven_fuel_type] = args[:heating_system_fuel]
@@ -1047,6 +1055,17 @@ module URBANopt
 
         return osw
       end # create_osw
+
+      # Convenience function to get the attribute from a feature with a default
+      # value if the attribute doesn't exist.
+      def get_feature_attr(feature, attr, default: nil)
+        begin
+          return feature.send(attr)
+        rescue NoMethodError
+          return default
+        end
+      end
+
     end # BaselineMapper
   end # Scenario
 end # URBANopt
