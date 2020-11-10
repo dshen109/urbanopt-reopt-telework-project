@@ -53,7 +53,8 @@ class Rate(object):
 
         using_rate_label = False
 
-        if " " not in self.rate or self.util is None:  # no spaces in rate label, assume spaces in rate name
+        # no spaces in rate label, assume spaces in rate name
+        if " " not in self.rate or self.util is None:
             request_params["getpage"] = self.rate
             using_rate_label = True
 
