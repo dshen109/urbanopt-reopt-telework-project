@@ -255,8 +255,6 @@ class Rate(object):
 
         :return: matplotlib figure object
         """
-        print('ahhh')
-        assert 0
         fig, axs = plt.subplots(self.num_seasons, 2, sharex=True, sharey=True,
                                 figsize=figsize, squeeze=False)
         month_groups = {}
