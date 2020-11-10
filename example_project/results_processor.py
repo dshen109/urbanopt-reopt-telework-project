@@ -321,7 +321,6 @@ class Results:
         params = {
             "location": location,
             "schedules_type": schedules_type,
-            "building_num": building_num,
             "schedules_occupant_types": occupant_types,
         }
         for scenario in self.get_matching_scenarios(params):
@@ -348,7 +347,7 @@ class Results:
             if not (3600 / scenario_params["timesteps_per_hour"] == report_timestep):
                 raise RuntimeError(
                     "Mismatch in simulated timestep vs. scenario timestep, "
-                    f"building {building_num} of {self.scenario_name}")
+                    f"building {building_num} of {scenario}")
 
             min_per_step = int(60 / scenario_params["timesteps_per_hour"])
             report = report.resample(f"{min_per_step}T",
@@ -400,8 +399,9 @@ class Results:
 
     def get_matching_scenarios(self, params=None):
         """
-        Only get scenarios IDs that match the specified parameter(s). If None,
-        return all scenarios.
+        Only get scenarios IDs that match the specified parameter(s).
+
+        If a parameter is None, acts like a wildcard.
 
         :param dict parameters: Dictionary of scenario parameters that must
             match. If the values are a list, will consider the scenario to
