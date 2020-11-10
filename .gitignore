@@ -6,6 +6,7 @@
 /example_project/.bundle
 /example_project/weather/*.csv
 /example_project/.ipynb_checkpoints*
+/example_project/measures/*/tests
 .DS_Store
 *.gem
 *.rbc
