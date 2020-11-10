@@ -52,7 +52,6 @@ class Rate(object):
         }
 
         using_rate_label = False
-
         # no spaces in rate label, assume spaces in rate name
         if " " not in self.rate or self.util is None:
             request_params["getpage"] = self.rate
@@ -250,13 +249,65 @@ class Rate(object):
         fig.tight_layout()
         return fig
 
-    def visualize_demand_rates(self):
+    def visualize_demand_rates(self, figsize=(12, 7), palette='flare'):
         """
         Make graph of demand rates.
 
         :return: matplotlib figure object
         """
-        pass
+        print('ahhh')
+        assert 0
+        fig, axs = plt.subplots(self.num_seasons, 2, sharex=True, sharey=True,
+                                figsize=figsize, squeeze=False)
+        month_groups = {}
+        for month in range(12):
+            weekday = tuple(self.demandweekdayschedule[month])
+            weekend = tuple(self.demandweekendschedule[month])
+            if (weekday, weekend) in month_groups:
+                month_groups[(weekday, weekend)].append(month)
+            else:
+                month_groups[(weekday, weekend)] = [month]
+
+        period_cmap = self.colorpalette('demand', palette)
+
+        row_count = 0
+        for schedule, months in month_groups.items():
+            month_names = [calendar.month_abbr[i+1] for i in months]
+            weekday_sched, weekend_sched = schedule
+            weekday_ax = axs[row_count][0]
+            weekend_ax = axs[row_count][1]
+
+            weekday_colors = [period_cmap[period] for period in weekday_sched]
+            weekend_colors = [period_cmap[period] for period in weekend_sched]
+
+            hour = list(range(24))
+
+            weekday_ax.bar(
+                hour, self.periods_to_prices(weekday_sched), align='edge',
+                width=1, color=weekday_colors
+            )
+            weekday_ax.set_title(
+                f"Weekday Demand Rates:\n{', '.join(month_names)}"
+            )
+
+            weekend_ax.bar(
+                hour, self.periods_to_prices(weekend_sched), align='edge',
+                width=1, color=weekend_colors
+            )
+            weekend_ax.set_title(
+                f"Weekend Demand Rates:\n{', '.join(month_names)}"
+            )
+
+            weekday_ax.set_ylabel("Price ($ / kW)")
+
+            # TODO: How to handle tiered rates?
+            row_count += 1
+
+        axs[-1][0].set_xlabel("Hour of day")
+        axs[-1][1].set_xlabel("Hour of day")
+
+        fig.tight_layout()
+        return fig
 
     def __getattr__(self, attr):
         """
