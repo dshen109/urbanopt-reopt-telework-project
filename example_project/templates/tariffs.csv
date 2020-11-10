@@ -1,8 +1,6 @@
 tariff name,urdb,net metering
-coned,5cd1e2125457a3c52754e9d1,true
-coned,5cd1e2125457a3c52754e9d1,false
-portland,5cc0d8e05457a35039671080,true
-portland,5cc0d8e05457a35039671080,false
+coned-sc1,5cd1e30b5457a3a52a54e9d3,true
+coned-sc1,5cd1e30b5457a3a52a54e9d3,false
 sdge-ses,5cafb9ce5457a39d457780e6,true
 sdge-ses,5cafb9ce5457a39d457780e6,false
 salt river project,5dc49b5f5457a39661f6a951,true
