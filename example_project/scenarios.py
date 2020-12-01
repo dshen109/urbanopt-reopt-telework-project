@@ -299,9 +299,15 @@ class Simulation:
         """
         Return a list of the modeled load in kW for the building.
         """
+        # Get the name of the feature report folder
+        report_folder = [
+            f for f in os.listdir(
+                os.path.join('run', self.scenario_name, str(building_num)))
+            if 'default_feature_reports' in f
+        ][0]
         report_csv = os.path.join(
             'run', self.scenario_name, str(building_num),
-            "014_default_feature_reports", "default_feature_reports.csv")
+            report_folder, "default_feature_reports.csv")
         report = pd.read_csv(
             report_csv, index_col=0, infer_datetime_format=True,
             parse_dates=True
@@ -379,7 +385,7 @@ class Simulation:
 
         timesteps = self.reopt_timesteps_per_hour
 
-        # Make a unique UUID
+        # Make a unique `UUID`
         uuid = getID(
             {
                 "net metering": net_metering,
@@ -406,6 +412,7 @@ class Simulation:
                 f'home-{self.location}-{self.number_of_bedrooms}-bd-' \
                 f'{self.floor_area}-sched-{self.schedules_type}-occ-' \
                 f'{self.building_parameters.get("schedules_occupant_types")}-' \
+                f'hvac-setback-{int(self.hvac_thermostat_offset)}-' \
                 f'{self.building_sim_uuid}'.replace(' ', '-').lower()
         else:
             return \
@@ -464,9 +471,9 @@ class Simulation:
         }
         params = {**params, **self.building_parameters}
         # If occupants_type isn't set, don't include it for backcompatibility
-        if 'schedules_occupant_types' in params and \
-                not params['schedules_occupant_types']:
-            del params['schedules_occupant_types']
+        # if 'schedules_occupant_types' in params and \
+        #         not params['schedules_occupant_types']:
+        #     del params['schedules_occupant_types']
         return getID(params)
 
 
@@ -680,6 +687,10 @@ def reopt_poller(url, poll_interval=3):
     key_error_count = 0
     key_error_threshold = 3
     status = "Optimizing..."
+
+    start = time.monotonic()
+    timeout = 500
+
     while True:
         resp = requests.get(url=url, verify=False)
         try:
@@ -701,6 +712,8 @@ def reopt_poller(url, poll_interval=3):
                 break
         if status != "Optimizing...":
             break
+        elif (time.monotonic() - start) > timeout:
+            raise RuntimeError("Breaking polling loop since timeout exceeded.")
         else:
             time.sleep(poll_interval)
 
@@ -735,6 +748,8 @@ if __name__ == "__main__":
                             "to prevent hitting the REopt API limit. Only "
                             "applies if the --reopt-async"
                             "flag is set.")
+    parser.add_argument('--reverse', action='store_true',
+                        help=f"Reverse the order which scenarios are run.")
     args = parser.parse_args()
 
     start = time.monotonic()
@@ -772,6 +787,8 @@ if __name__ == "__main__":
             log(f"Files to run: {templates}")
         # sort the templates so we get the same ordering.
         templates = sorted(templates)
+        if args.reverse:
+            templates.reverse()
         total = len(templates)
         number_run = 0
         start = time.monotonic()
