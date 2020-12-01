@@ -381,6 +381,10 @@ module URBANopt
       end
 
       def set_predictive_thermostats(feature, osw)
+        schedules_type = get_feature_attr(feature, 'schedules_type')
+        if schedules_type.nil? || schedules_type == 'default'
+          return
+        end
         unless get_feature_attr(feature, 'hvac_setback_zone_names').nil?
           OpenStudio::Extension.set_measure_argument(
             osw, 'predictive_thermostats', 'zone_names',
