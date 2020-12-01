@@ -255,6 +255,8 @@ class Rate(object):
 
         :return: matplotlib figure object
         """
+        if not self.has_demand_charge:
+            return None
         fig, axs = plt.subplots(self.num_seasons, 2, sharex=True, sharey=True,
                                 figsize=figsize, squeeze=False)
         month_groups = {}
@@ -281,16 +283,16 @@ class Rate(object):
             hour = list(range(24))
 
             weekday_ax.bar(
-                hour, self.periods_to_prices(weekday_sched), align='edge',
-                width=1, color=weekday_colors
+                hour, self.periods_to_prices(weekday_sched, which='demand'),
+                align='edge', width=1, color=weekday_colors
             )
             weekday_ax.set_title(
                 f"Weekday Demand Rates:\n{', '.join(month_names)}"
             )
 
             weekend_ax.bar(
-                hour, self.periods_to_prices(weekend_sched), align='edge',
-                width=1, color=weekend_colors
+                hour, self.periods_to_prices(weekend_sched, which='demand'),
+                align='edge', width=1, color=weekend_colors
             )
             weekend_ax.set_title(
                 f"Weekend Demand Rates:\n{', '.join(month_names)}"
@@ -318,12 +320,18 @@ class Rate(object):
 
         return object.__getattribute__(self, attr)
 
-    def periods_to_prices(self, periods, tier=0):
+    def periods_to_prices(self, periods, tier=0, which='energy'):
         """
-        Convert a list of periods to the prices.
+        Convert a list of periods to the energy prices.
         """
+        if which == 'energy':
+            structure = self.energyratestructure
+        elif which == 'demand':
+            structure = self.demandratestructure
+        else:
+            raise ValueError(f"Unknown structure: {which}")
         return [
-            self.energyratestructure[period][tier]['rate']
+            structure[period][tier]['rate']
             for period in periods
         ]
 
